@@ -1,0 +1,24 @@
+clearvars;
+close all;
+clc;
+a = 1000;
+b = -350000;
+c = 800;
+
+x1 = (-b-sqrt(b^2-4*a*c))/(2*a);
+x2 = (-b+sqrt(b^2-4*a*c))/(2*a);
+fprintf("x1 = %.15f\n", x1)
+fprintf("x2 = %.15f\n", x2)
+
+if(abs(x1)>=abs(x2))
+    x22 = c/(a*x1);
+    fprintf("new x2 = %.15f\n", x22)
+    roz = x2 -x22;
+    fprintf("diff = %.15f\n", roz)
+
+else
+    x11 = c/(a*x2);
+    fprintf("new x1 = %.15f\n", x11)
+    roz = x1 -x11;
+    fprintf("diff = %.15f\n", roz)
+end

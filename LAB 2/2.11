@@ -1,0 +1,10 @@
+clearvars;
+close all;
+clc;
+
+ x = 10 ^(-50);
+ y = 10 ^200;
+ z = 10 ^300;
+ a = (x*y)/z
+ b = x*(y/z)
+ c = (x/z)*y

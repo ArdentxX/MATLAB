@@ -1,0 +1,19 @@
+clearvars;
+close all;
+clc;
+for p = 0:15
+    x = 10^p;
+    f1x = sqrt(x)*(sqrt(x+1)-sqrt(x));
+    f2x = sqrt(x)/(sqrt(x+1)+sqrt(x));
+    fprintf('At x=%-12.0f, f1(x)=%.15f, f2(x)=%.15f\n', x, f1x, f2x);
+    if(p>=10)
+        pxj=sqrt(x+1);
+        px=sqrt(x);
+        fprintf("sqrt(x+1)=%.15f\n", pxj)
+        fprintf("sqrt(x)= %.15f\n", px)
+        diff = abs(px-pxj);
+        fprintf("diff=%.15f\n",diff)
+        sum = pxj+px;
+        fprintf("sum=%.15f\n",sum)
+    end
+end

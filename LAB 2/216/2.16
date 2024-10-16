@@ -1,0 +1,24 @@
+clearvars;
+close all;
+clc;
+a= 0.5;
+c= 0.490;
+b= 1 + 0.001 * randn(1,1000);
+
+x1= (-b-sqrt(b.^2-4*a*c))/(2*a); %x1
+%diff(x1,b)- funkcja na wyliczenie pochodnej nie działa dla liczbowych
+px1 = (-1/(2*a))-(b./(2*a*sqrt(b.^2-4*a*c))); %pochodna z x1
+
+% condx = (b.*px1)/x1; %Wskaźnik uwarunkowanie :)
+%mi wychodzi z obliczeń
+condx=(b*(b/sqrt(b.^2 - 4*a*c) + 1))/(b + sqrt(b.^2 - 4*a*c));
+
+%z książki:
+%condx = b/sqrt(b.^2-4*a*c);
+
+srednia = mean(x1);
+odchylenie = std(x1);
+
+disp("COND: "+condx)
+disp("Mean(X1): "+srednia)
+disp("STD: "+odchylenie)
