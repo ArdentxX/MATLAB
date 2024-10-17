@@ -1,0 +1,43 @@
+% Parametry zadania
+v_user = 30; % prędkość użytkownika w m/s
+t_max = 6; % czas obserwacji w sekundach
+dt = 0.01; % krok czasowy w sekundach
+t = 0:dt:t_max; % wektor czasu
+f = 3e9; % częstotliwość (3 GHz)
+lambda = 3e8 / f; % długość fali w metrach
+
+% Pozycje (x, y)
+BS = [110, 190]; % stacja bazowa
+user_start = [50, 10];
+user_end = [50, 300];
+
+% Ściany
+wall1_start = [20, 30];
+wall1_end = [20, 300];
+wall2_start = [70, 100];
+wall2_end = [130, 100];
+
+% Pozycja użytkownika w czasie
+user_pos = @(t) [user_start(1) + (user_end(1) - user_start(1)) * t / t_max, ...
+user_start(2) + v_user * t];
+
+% Moc sygnału bezpośredniego
+P0 = 5; % Moc stacji bazowej w W
+d0 = norm(BS - user_start); % odległość początkowa
+Pr_direct = @(d) P0 * (lambda / (4 * pi * d))^2; % Moc sygnału bezpośredniego
+
+% Symulacja
+P_direct = zeros(size(t)); % Moc sygnału bezpośredniego
+for i = 1:length(t)
+user_current = user_pos(t(i));
+d_direct = norm(BS - user_current); % odległość do użytkownika
+P_direct(i) = Pr_direct(d_direct); % Moc bezpośrednia
+end
+
+% Rysowanie wykresu
+figure;
+plot(t, 10*log10(P_direct));
+xlabel('Czas [s]');
+ylabel('Moc sygnału [dB]');
+title('Moc sygnału bezpośredniego w funkcji czasu');
+grid on;
