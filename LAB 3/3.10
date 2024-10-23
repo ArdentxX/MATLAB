@@ -1,0 +1,50 @@
+
+clear all;
+close all;
+clc;
+load('babia_gora.dat'); % Wczytywanie danych
+X = babia_gora; % Zakładam, że dane z pliku są w tej samej formie
+size(X);
+
+% Rysowanie punktów przed interpolacją
+figure;
+plot3(X(:,1), X(:,2), X(:,3), 'b.');
+xlabel('X'); ylabel('Y'); zlabel('Z');
+grid on;
+
+
+
+% Interpolacja danych
+x = X(:,1); y = X(:,2); z = X(:,3);
+vmin = min( min(x), min(y) ); % min zakres
+vmax = max( max(x), max(y) ); % max zakres
+[xi,yi] = meshgrid( vmin : (vmax-vmin)/200 : vmax ); % dopasowanie zakresu siatki
+zi = griddata( x, y, z, xi, yi, 'linear' ); % interpolacja
+
+
+% Definiowanie macierzy rotacji
+ax = 90/180*pi; % Obrót wokół osi X
+ay = 180/180*pi; % Obrót wokół osi Y
+az = 90/180*pi; % Obrót wokół osi Z
+
+Rx = [ 1, 0, 0;
+       0, cos(ax), -sin(ax);
+       0, sin(ax), cos(ax) ];% Macierz rotacji wokół osi X
+
+Ry = [ cos(ay), 0, -sin(ay);
+       0, 1, 0;
+       sin(ay), 0, cos(ay) ]; % Macierz rotacji wokół osi Y
+
+Rz = [ cos(az), -sin(az), 0;
+       sin(az), cos(az), 0;
+       0, 0, 1 ];           % Macierz rotacji wokół osi Z
+
+% Przeprowadzanie obrotu (3 rotacje po kolei)
+XR = Rz * Ry * Rx * X'; % Transponowanie X, aby pasowało do macierzy rotacji
+
+% Rysowanie wyników po obrocie
+figure;
+plot3( XR(1,:), XR(2,:), XR(3,:), 'r.' );
+title('Dane po obrocie');
+xlabel('X'); ylabel('Y'); zlabel('Z');
+grid on;
