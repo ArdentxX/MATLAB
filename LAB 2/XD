@@ -1,43 +1,32 @@
-% Parametry zadania
-v_user = 30; % prędkość użytkownika w m/s
-t_max = 6; % czas obserwacji w sekundach
-dt = 0.01; % krok czasowy w sekundach
-t = 0:dt:t_max; % wektor czasu
-f = 3e9; % częstotliwość (3 GHz)
-lambda = 3e8 / f; % długość fali w metrach
-
-% Pozycje (x, y)
-BS = [110, 190]; % stacja bazowa
-user_start = [50, 10];
-user_end = [50, 300];
-
-% Ściany
-wall1_start = [20, 30];
-wall1_end = [20, 300];
-wall2_start = [70, 100];
-wall2_end = [130, 100];
-
-% Pozycja użytkownika w czasie
-user_pos = @(t) [user_start(1) + (user_end(1) - user_start(1)) * t / t_max, ...
-user_start(2) + v_user * t];
-
-% Moc sygnału bezpośredniego
-P0 = 5; % Moc stacji bazowej w W
-d0 = norm(BS - user_start); % odległość początkowa
-Pr_direct = @(d) P0 * (lambda / (4 * pi * d))^2; % Moc sygnału bezpośredniego
-
-% Symulacja
-P_direct = zeros(size(t)); % Moc sygnału bezpośredniego
-for i = 1:length(t)
-user_current = user_pos(t(i));
-d_direct = norm(BS - user_current); % odległość do użytkownika
-P_direct(i) = Pr_direct(d_direct); % Moc bezpośrednia
-end
-
-% Rysowanie wykresu
-figure;
-plot(t, 10*log10(P_direct));
-xlabel('Czas [s]');
-ylabel('Moc sygnału [dB]');
-title('Moc sygnału bezpośredniego w funkcji czasu');
-grid on;
+clc;
+clear;
+lambda = 0.1; 
+d = lambda;   
+P_total = 20e-3; 
+k = 2 * pi / lambda;
+user1 = [100, 10]; 
+user2 = [140, 10]; 
+antenna1 = [0, 0];
+antenna2 = [d, 0];
+% Obliczanie odległości 
+r1_1 = norm(user1 - antenna1); 
+r1_2 = norm(user1 - antenna2); 
+r2_1 = norm(user2 - antenna1); 
+r2_2 = norm(user2 - antenna2); 
+% Fazy na antenach
+phase1_user1 = k * r1_1; 
+phase2_user1 = k * r1_2; 
+phase1_user2 = k * r2_1;
+phase2_user2 = k * r2_2; 
+% Symulacj odbieranego sygnału
+sygnal_user1 = P_total * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
+sygnal_user2 = P_total * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
+% Moc szumu 
+P_noise = 1e-13; % Moc szumu 
+% Obliczanie SNR
+SNR_user1 = abs(sygnal_user1)^2 / P_noise;
+SNR_user2 = abs(sygnal_user2)^2 / P_noise;
+SNR_user1_dB = 10 * log10(SNR_user1);
+SNR_user2_dB = 10 * log10(SNR_user2);
+fprintf('\nSNR u użytkownika 1: %.2f dB\n', SNR_user1_dB);
+fprintf('SNR u użytkownika 2: %.2f dB\n', SNR_user2_dB);
