@@ -16,11 +16,11 @@ r2_1 = norm(user2 - antenna1);
 r2_2 = norm(user2 - antenna2); 
 phase1_user1 = k * r1_1; 
 phase2_user1 = k * r1_2; 
-phase1_user2 = k * r2_1; 
-phase2_user2 = k * r2_2; 
+phase1_user2 = k * r2_1 +pi; 
+phase2_user2 = k * r2_2 +pi; 
 
-sygnal_user1 = P_total * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
-sygnal_user2 = P_total * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
+sygnal_user1 = P_total/4 * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
+sygnal_user2 = P_total/4 * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
 
 
 P_noise = 1e-13; 
