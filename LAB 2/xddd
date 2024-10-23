@@ -1,0 +1,35 @@
+clc;
+clear;
+
+
+lambda = 0.1;  
+d = lambda;  
+P_total = 20e-3; 
+k = 2 * pi / lambda;
+user1 = [100, 10]; 
+user2 = [140, 10]; 
+antenna1 = [0, 0];
+antenna2 = [d, 0];
+r1_1 = norm(user1 - antenna1); 
+r1_2 = norm(user1 - antenna2); 
+r2_1 = norm(user2 - antenna1); 
+r2_2 = norm(user2 - antenna2); 
+phase1_user1 = k * r1_1; 
+phase2_user1 = k * r1_2; 
+phase1_user2 = k * r2_1 +pi; 
+phase2_user2 = k * r2_2 +pi; 
+
+sygnal_user1 = P_total/4 * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
+sygnal_user2 = P_total/4 * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
+
+
+P_noise = 1e-13; 
+
+% SNR 
+SNR_user1 = abs(sygnal_user1)^2 / P_noise;
+SNR_user2 = abs(sygnal_user2)^2 / P_noise;
+SNR_user1_dB = 10 * log10(SNR_user1);
+SNR_user2_dB = 10 * log10(SNR_user2);
+fprintf('SNR u użytkownika 1: %.2f dB\n', SNR_user1_dB);
+fprintf('SNR u użytkownika 2: %.2f dB\n', SNR_user2_dB);
+
