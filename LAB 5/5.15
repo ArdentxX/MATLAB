@@ -1,4 +1,3 @@
-Mikołaj Zajdek
 clc;
 clear all;
 close all;
@@ -31,7 +30,6 @@ for i = 1:n-1
     d(i) = (c(i+1) - c(i)) / (3 * h(i));
 end
 
-disp('Współczynniki a, b, c, d dla każdego przedziału:');
 for i = 1:n-1
     fprintf('Przedział [%f, %f]:\n', x(i), x(i+1));
     fprintf('a = %f, b = %f, c = %f, d = %f\n', a(i), b(i), c(i), d(i));
