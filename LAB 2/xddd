@@ -1,35 +1,81 @@
-clc;
-clear;
+% Parametry
+num_robots = 90;                 % Liczba robotów
+terrain_width = 80;              % Szerokość terenu (x-dimension)
+terrain_height = 70;             % Wysokość terenu (y-dimension)
+sigma = 0.2;                      % Odchylenie standardowe błędu pomiaru AoA
 
+% Losowe położenie robotów na terenie
+robot_positions = [terrain_width * rand(num_robots, 1), terrain_height * rand(num_robots, 1)];
 
-lambda = 0.1;  
-d = lambda;  
-P_total = 20e-3; 
-k = 2 * pi / lambda;
-user1 = [100, 10]; 
-user2 = [140, 10]; 
-antenna1 = [0, 0];
-antenna2 = [d, 0];
-r1_1 = norm(user1 - antenna1); 
-r1_2 = norm(user1 - antenna2); 
-r2_1 = norm(user2 - antenna1); 
-r2_2 = norm(user2 - antenna2); 
-phase1_user1 = k * r1_1; 
-phase2_user1 = k * r1_2; 
-phase1_user2 = k * r2_1 +pi; 
-phase2_user2 = k * r2_2 +pi; 
+% Pozycje stacji referencyjnych (w rogach prostokąta)
+station_positions = [
+    0, 0;                      % Stacja A (lewy dolny róg)
+    terrain_width, 0;          % Stacja B (prawy dolny róg)
+    terrain_width, terrain_height; % Stacja C (prawy górny róg)
+    0, terrain_height          % Stacja D (lewy górny róg)
+];
 
-sygnal_user1 = P_total/4 * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
-sygnal_user2 = P_total/4 * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
+% Funkcja pomocnicza do obliczania kąta nadejścia sygnału (AoA)
+% między robotem a stacją referencyjną
+get_angle = @(station_pos, robot_pos) atan2d(robot_pos(2) - station_pos(2), robot_pos(1) - station_pos(1));
 
+% Macierz do przechowywania oszacowanych pozycji robotów
+estimated_positions = zeros(num_robots, 2);
 
-P_noise = 1e-13; 
+% Obliczenia dla każdego robota
+for i = 1:num_robots
+    % Rzeczywista pozycja robota
+    robot_pos = robot_positions(i, :);
+    
+    % Obliczanie szacowanych kątów nadejścia sygnału (AoA) z każdej stacji
+    angles = zeros(4, 1);
+    for j = 1:4
+        % Obliczanie rzeczywistego kąta do stacji j
+        true_angle = get_angle(station_positions(j, :), robot_pos);
+        % Szacowanie kąta AoA z dodanym szumem N(0, sigma)
+        measured_angle = true_angle + sigma * randn();
+        angles(j) = measured_angle;
+    end
+    
+    % Konwersja kątów na radiany
+    angles_rad = deg2rad(angles);
+    
+    % Algorytm najmniejszych kwadratów do wyznaczenia pozycji
+    A = [];
+    b = [];
+    for j = 1:4
+        station = station_positions(j, :);
+        angle = angles_rad(j);
+        A = [A; tan(angle), -1];
+        b = [b; tan(angle) * station(1) - station(2)];
+    end
+    
+    % Rozwiązanie układu równań (metoda najmniejszych kwadratów)
+    estimated_position = (A \ b);
+    estimated_positions(i, :) = estimated_position';
+end
 
-% SNR 
-SNR_user1 = abs(sygnal_user1)^2 / P_noise;
-SNR_user2 = abs(sygnal_user2)^2 / P_noise;
-SNR_user1_dB = 10 * log10(SNR_user1);
-SNR_user2_dB = 10 * log10(SNR_user2);
-fprintf('SNR u użytkownika 1: %.2f dB\n', SNR_user1_dB);
-fprintf('SNR u użytkownika 2: %.2f dB\n', SNR_user2_dB);
+% Obliczanie średniego błędu lokalizacji
+errors = sqrt(sum((estimated_positions - robot_positions) .^ 2, 2));
+mean_error = mean(errors);
 
+% Wizualizacja wyników
+figure;
+hold on;
+% Rzeczywiste pozycje robotów
+scatter(robot_positions(:, 1), robot_positions(:, 2), 'bo', 'DisplayName', 'Rzeczywista pozycja');
+% Oszacowane pozycje robotów
+scatter(estimated_positions(:, 1), estimated_positions(:, 2), 'rx', 'DisplayName', 'Oszacowana pozycja');
+% Pozycje stacji referencyjnych
+scatter(station_positions(:, 1), station_positions(:, 2), 'gs', 'filled', 'DisplayName', 'Stacje referencyjne');
+legend;
+xlabel('x (m)');
+ylabel('y (m)');
+title(['Symulacja pozycji robotów na podstawie szacowanego kąta nadejścia sygnału (AoA)', ...
+       ', Średni błąd lokalizacji: ', num2str(mean_error, '%.2f'), ' m']);
+axis([0 terrain_width 0 terrain_height]);
+grid on;
+hold off;
+
+% Wyświetlenie średniego błędu lokalizacji
+disp(['Średni błąd lokalizacji: ', num2str(mean_error), ' m']);
