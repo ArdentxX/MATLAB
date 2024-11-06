@@ -1,0 +1,44 @@
+clearvars;
+close all;
+clc;
+
+ N =20;
+ % liczbaznanychpunktowfunkcji, u nassinus()
+ xmax = 2*5*pi;
+ %maksymalnawartoscargumentufunkcji
+ xp = 0 :xmax/(N-1) : xmax; % wartosciargumentowdlaznanychwartoscifunkcji
+ xd = 0 :0.001:xmax;
+ % wartosciargumentow w punktachinterpolacji
+ yp =sin( xp );
+ yd =sin( xd );
+ % znanewartosci
+ % wartosci w punktachinterpolacji- dosprawdzenia
+ figure;
+ plot( xp, yp, "ro", xd, yd, "b-"); xlabel("x"); title("y(x)"); grid;
+ %Wspolczynnikiwielomianu y(x) = a0 + a1*x^1 + a2*x^2 + ... + aP*x^P
+ P = N-1; %rzadwielomianu: 0 (a0), 1 (a0 + a1*x), 2 (a0 + a1*x + a2*x^2), ...
+ a =polyfit( xp, yp, P ); %obliczeniewsp.wielomianuinterpolujacego
+ %Interpolacjafunkcji w zadanychpunktach xi
+ xi = xd;
+ %argumentypunktowinterpolacji
+ yi =polyval(a,xi);
+ a =a(end:-1:1);
+ % wartosci w punktachinterpolacji
+ % wMatlabiewsp. sazapisywaneodnajwyzszejpotegi
+ yi_moje = zeros(1,length(xi));
+ for k = 1 : N
+ % samiobliczamywartosci w punktachinterpolacji
+ yi_moje = yi_moje + a(k) * xi.^(k-1);
+ end
+ max_abs_yi = max( abs( yi- yi_moje) );
+ figure;
+ plot( xp,yp,"ro", xd,yd,"b-", xi,yi,"k-" ); xlabel("x"); title("y(x)"); grid;
+ figure;
+ plot( xd, yd-yi, "k-" ); xlabel("x"); title("BLADINTERPOLACJI NR 1"); grid;
+ % Funkcjainterpolacji w Matlabie- interp1()
+ yis =interp1( xp, yp, xi, "spline" );
+ figure;
+ plot( xp,yp,"ro", xd,yd,"b-", xi,yi,"k-", xi,yis,"k--" );
+ xlabel("x"); title("y(x)"); grid;
+ figure;
+ plot( xd, yd- yis, "k-" ); xlabel("x"); title("BLADINTERPOLACJI NR 2"); grid;
