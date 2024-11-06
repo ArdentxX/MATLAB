@@ -1,5 +1,5 @@
 function B = B_j3(x, x_j)
-    u = abs(x - x_j);
+    u = x - x_j;
     if 1 <= (x - x_j) && (x - x_j) < 2
         B = (1 - u)^3 / 6;
     elseif 0 <= (x - x_j) && (x - x_j) < 1
