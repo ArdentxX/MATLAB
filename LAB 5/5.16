@@ -1,0 +1,31 @@
+clc;
+clear all;
+close all;
+% Definiowanie punktów x wokół węzła x_j
+x_j = 0; % Węzeł odniesienia
+x = linspace(-2, 2, 1000); % Przedział wokół x_j
+
+% Obliczenie wartości B-splajnu dla każdej części
+B = zeros(size(x));
+for i = 1:length(x)
+    u = x(i) - x_j;
+    if (1 <= u) && (u < 2)
+        B(i) = (1 - u)^3 / 6;
+    elseif (0 <= u) && (u < 1)
+        B(i) = (3 * u^3 - 6 * u^2 + 4) / 6;
+    elseif (-1 <= u) && (u < 0)
+        B(i) = (-3 * u^3 + 3 * u^2 + 3 * u + 1) / 6;
+    elseif (-2 <= u) && (u < -1)
+        B(i) = u^3 / 6;
+    else
+        B(i) = 0;
+    end
+end
+
+% Rysowanie wykresu
+figure;
+plot(x, B, 'b-', 'LineWidth', 2);
+xlabel('x');
+ylabel('B_{j,3}(x)');
+title('Kubiczny B-splajn B_{j,3}(x)');
+grid on;
