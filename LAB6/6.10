@@ -1,0 +1,20 @@
+clearvars;
+close all;
+clc;
+
+x =-5:0.1:5;
+
+erf_exact = (1+x.^2).^-1;
+erf_pade = (1+x.^2).^-1;
+erf_taylor = 1-x.^2+x.^4;
+
+figure;
+plot(x, erf_exact);
+grid on
+hold on;
+plot(x,erf_pade)
+plot(x,erf_taylor)
+ylim([-1.5, 1.5]);
+xlim([-2.5,2.5])
+
+hold off;
