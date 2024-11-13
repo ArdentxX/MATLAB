@@ -1,0 +1,21 @@
+clearvars;
+close all;
+clc;
+x = -1:0.01:1;
+
+Cx0= ones(size(x));
+Cx1= x;
+Cx2= 2*x.*Cx1-Cx0;
+Cx3= 2*x.*Cx2-Cx1;
+Cx4= 2*x.*Cx3-Cx2;
+Cx5= 2*x.*Cx4-Cx3;
+Cx6= 2*x.*Cx5-Cx4;
+Cx7= 2*x.*Cx6-Cx5;
+
+C_vals = {Cx0, Cx1, Cx2, Cx3, Cx4, Cx5, Cx6, Cx7};
+figure;
+hold on;
+for i = 1:length(C_vals)
+    plot(x, C_vals{i}, 'DisplayName', sprintf('C_%d(x)', i-1));
+end
+
