@@ -1,0 +1,17 @@
+clearvars;
+close all;
+clc;
+
+x =-5:0.1:5;
+
+erf_exact = erf(x);
+erf_taylor = (2 / sqrt(pi)) * (x - (x.^3) / 3 + (x.^5) / 10 - (x.^7) / 42);
+
+figure;
+plot(x, erf_exact);
+grid on
+hold on;
+plot(x,erf_taylor)
+ylim([-1.5, 1.5]);
+
+hold off;
