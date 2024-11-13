@@ -1,32 +1,92 @@
-clc;
-clear;
-lambda = 0.1; 
-d = lambda;   
-P_total = 20e-3; 
-k = 2 * pi / lambda;
-user1 = [100, 10]; 
-user2 = [140, 10]; 
-antenna1 = [0, 0];
-antenna2 = [d, 0];
-% Obliczanie odległości 
-r1_1 = norm(user1 - antenna1); 
-r1_2 = norm(user1 - antenna2); 
-r2_1 = norm(user2 - antenna1); 
-r2_2 = norm(user2 - antenna2); 
-% Fazy na antenach
-phase1_user1 = k * r1_1; 
-phase2_user1 = k * r1_2; 
-phase1_user2 = k * r2_1;
-phase2_user2 = k * r2_2; 
-% Symulacj odbieranego sygnału
-sygnal_user1 = P_total * (exp(1i * phase1_user1) + exp(1i * phase2_user1));
-sygnal_user2 = P_total * (exp(1i * phase1_user2) + exp(1i * phase2_user2));
-% Moc szumu 
-P_noise = 1e-13; % Moc szumu 
-% Obliczanie SNR
-SNR_user1 = abs(sygnal_user1)^2 / P_noise;
-SNR_user2 = abs(sygnal_user2)^2 / P_noise;
-SNR_user1_dB = 10 * log10(SNR_user1);
-SNR_user2_dB = 10 * log10(SNR_user2);
-fprintf('\nSNR u użytkownika 1: %.2f dB\n', SNR_user1_dB);
-fprintf('SNR u użytkownika 2: %.2f dB\n', SNR_user2_dB);
+x_max = 60;
+y_max = 40;
+
+transmitters = [5.5, 4.5; 5.5, 20; 5.5, 34];
+receivers = [54, 10.5; 54, 16.5; 54, 24.5; 54, 30.5];
+
+object_position = [30, 20];
+
+figure;
+hold on;
+axis([0 x_max 0 y_max]);
+grid on;
+title('Lokalizacja pasywna z wykrywaniem zablokowanych dróg propagacji');
+xlabel('X [m]');
+ylabel('Y [m]');
+
+plot(transmitters(:,1), transmitters(:,2), 'bo', 'MarkerSize', 8, 'DisplayName', 'Nadajniki');
+plot(receivers(:,1), receivers(:,2), 'ro', 'MarkerSize', 8, 'DisplayName', 'Odbiorniki');
+
+for i = 1:size(transmitters, 1)
+    for j = 1:size(receivers, 1)
+        line([transmitters(i,1), receivers(j,1)], [transmitters(i,2), receivers(j,2)], 'Color', 'g');
+    end
+end
+
+rectangle('Position', [object_position(1) object_position(2) 1 1], 'EdgeColor', 'r', 'FaceColor', 'r', 'LineWidth', 1);
+
+function blocked_lines = check_blocked_lines(transmitters, receivers, obj_pos)
+    blocked_lines = [];
+    obj_x = obj_pos(1);
+    obj_y = obj_pos(2);
+
+    rect_points = [obj_x, obj_y; obj_x + 1, obj_y; obj_x + 1, obj_y + 1; obj_x, obj_y + 1];
+
+    for i = 1:size(transmitters, 1)
+        for j = 1:size(receivers, 1)
+            tx = transmitters(i,:);
+            rx = receivers(j,:);
+
+            intersects = false;
+            for k = 1:4
+                p1 = rect_points(k, :);
+                p2 = rect_points(mod(k, 4) + 1, :);
+
+                if dwawektory(tx(1), tx(2), rx(1), rx(2), p1(1), p1(2), p2(1), p2(2)) == 1
+                    intersects = true;
+                    break;
+                end
+            end
+
+            if intersects
+                blocked_lines = [blocked_lines; tx, rx];
+            end
+        end
+    end
+end
+
+blocked_lines = check_blocked_lines(transmitters, receivers, object_position);
+for i = 1:size(blocked_lines, 1)
+    line([blocked_lines(i,1), blocked_lines(i,3)], [blocked_lines(i,2), blocked_lines(i,4)], 'Color', 'r', 'LineWidth', 1.5);
+end
+
+% sector_size = 1;
+%
+% for x = 0:sector_size:(x_max - 1)
+%     for y = 0:sector_size:(y_max - 1)
+%         current_sector = [x, y];
+%         is_candidate = true;
+%
+%         for k = 1:size(blocked_lines, 1)
+%             tx = blocked_lines(k, 1:2);
+%             rx = blocked_lines(k, 3:4);
+%
+%             if dwawektory(tx(1), tx(2), rx(1), rx(2), current_sector(1), current_sector(2), current_sector(1) + 1, current_sector(2)) == -1 && ...
+%                dwawektory(tx(1), tx(2), rx(1), rx(2), current_sector(1), current_sector(2), current_sector(1), current_sector(2) + 1) == -1 && ...
+%                dwawektory(tx(1), tx(2), rx(1), rx(2), current_sector(1) + 1, current_sector(2), current_sector(1) + 1, current_sector(2) + 1) == -1 && ...
+%                dwawektory(tx(1), tx(2), rx(1), rx(2), current_sector(1), current_sector(2) + 1, current_sector(1) + 1, current_sector(2) + 1) == -1
+%                 is_candidate = true;
+%             else
+%                 is_candidate = false;
+%                 break;
+%             end
+%         end
+%
+%         if is_candidate
+%             rectangle('Position', [x, y, sector_size, sector_size], 'EdgeColor', 'b', 'FaceColor', 'g', 'LineWidth', 1);
+%         end
+%     end
+% end
+%
+% legend('Nadajniki', 'Odbiorniki', 'Zablokowane promienie', 'Potencjalna lokalizacja obiektu');
+% hold off;
