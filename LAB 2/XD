@@ -1,72 +1,45 @@
-clearvars; close all; clc;
+close all;
 
-room_x = 60;
-room_y = 40;
+x= 52;
+y= 38;
+kwadratx = 26;
+kwadraty = 17;
+rozmx =1;
+rozmy =1;
 
-transmitters = [5.5, 4.5; 5.5, 20; 5.5, 34];
-receivers = [54, 10.5; 54, 16.5; 54, 24.5; 54, 30.5];
+nadajniki = [12.5 26.5 40.5;2.5 2.5 2.5];
+odbiorniki =[8 30 44.5;36.5 36.5 36.5];
 
-figure;
-hold on;
-axis([0 room_x 0 room_y]);
-grid on;
+plot(x,y)
+hold on
+% blocked =zeros()
+for i =1:3
+    for j =1:3
+    k = wektorsektor(nadajniki(1,i),nadajniki(2,i),odbiorniki(1,j),odbiorniki(2,j),kwadratx,kwadraty,rozmx,rozmy);
+    if k == -1
+        line([nadajniki(1,i),odbiorniki(1,j)],[nadajniki(2,i),odbiorniki(2,j)],"Color","g","LineWidth",4)
+    end
+    if k == 1
+        line([nadajniki(1,i),odbiorniki(1,j)],[nadajniki(2,i),odbiorniki(2,j)],"Color","r","LineWidth",4)
 
-rectangle('Position', [0, 0, room_x, room_y], 'EdgeColor', 'k', 'LineWidth', 2);
+    end
 
-for i = 1:size(transmitters, 1)
-    plot(transmitters(i, 1), transmitters(i, 2), 'ro', 'MarkerSize', 10, 'DisplayName', 'Nadajnik');
-end
-
-for i = 1:size(receivers, 1)
-    plot(receivers(i, 1), receivers(i, 2), 'bo', 'MarkerSize', 10, 'DisplayName', 'Odbiornik');
-end
-
-for i = 1:size(transmitters, 1)
-    for j = 1:size(receivers, 1)
-        line([transmitters(i, 1), receivers(j, 1)], [transmitters(i, 2), receivers(j, 2)], 'Color', 'g');
     end
 end
 
-legend('show');
-title('Wizualizacja pomieszczenia z nadajnikami i odbiornikami');
-hold off;
+for i =0:x
+    for j=0:y
+        rectangle('Position',[i j 1 1])
 
-object_position = [20, 18];
-object_width = 1;
-object_height = 1;
-
-rectangle('Position', [object_position(1), object_position(2), object_width, object_height], 'FaceColor', 'r', 'EdgeColor', 'k');
-
-for i = 1:size(transmitters, 1)
-    for j = 1:size(receivers, 1)
-        tx = transmitters(i, :);
-        rx = receivers(j, :);
-
-        if wektorsektor(tx(1), tx(2), rx(1), rx(2), object_position(1), object_position(2), object_width, object_height) == 1
-            line([tx(1), rx(1)], [tx(2), rx(2)], 'Color', 'm', 'LineWidth', 2);
-        end
     end
 end
 
-hold off;
 
-potential_locations = zeros(room_x, room_y);
 
-for x = 0:(room_x-1)
-    for y = 0:(room_y-1)
-        sector_blocked = true;
-        
-        for i = 1:size(transmitters, 1)
-            for j = 1:size(receivers, 1)
-                if wektorsektor(transmitters(i, 1), transmitters(i, 2), receivers(j, 1), receivers(j, 2), x, y, 1, 1) == 1
-                    sector_blocked = false;
-                end
-            end
-        end
-        
-        if sector_blocked
-            potential_locations(x+1, y+1) = 1;
-            rectangle('Position', [x, y, 1, 1], 'EdgeColor', 'b', 'FaceColor', 'g', 'LineWidth', 1);
-        end
-    end
-end
+plot(nadajniki(1,:),nadajniki(2,:),"r*")
+plot(odbiorniki(1,:),odbiorniki(2,:),"b*")
+rectangle('Position',[kwadratx kwadraty rozmx rozmy],'FaceColor',"b")
+ylim([0,38])
+xlim([0,52])
+grid on
+hold off
