@@ -2,11 +2,20 @@ clear all; close all;
 
 N = 1000;
 % Elipsa - symetryczna macierz kowariancji elipsy
-S = [ 1   0.5; ...                 % do zmiany
-     0.5   1 ];                   % Na przękątnej wieksze wartości- elipsa się rozciąga
+% S = [ 1   0.5; ...                 % do zmiany
+%      0.5   1 ];                   % Na przękątnej wieksze wartości- elipsa się rozciąga
                                    %wartości poza przekątną to
                                    %gurbość(więcej- mniejsza)
                                    %elipsy
+% S = [2 0.8;
+%      0.8 1]; % Elipsa bardziej pochylona i rozciągnięta
+
+S = [1 0;
+     0 0.5]; % Okrąg rozciągnięty tylko w jednym kierunku (pionowo)
+
+% S = [1.5 0.3;
+%      0.3 1.2]; % Elipsa lekko pochylona
+
 [x,V,phi] = elipsa(S,1,N);
 R= [cos(phi), sin(phi);
    -sin(phi), cos(phi)],
