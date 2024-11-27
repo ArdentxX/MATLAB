@@ -1,0 +1,46 @@
+clear all; close all;
+
+A = [10, 2, 3, 4;
+     2, 20, 5, 6;
+     3, 5, 15, 7;
+     4, 6, 7, 25];
+disp('Macierz początkowa:');
+disp(A);
+
+% Rozmiar macierzy
+[N, ~] = size(A);
+
+tol = 1e-8;
+
+% Iteracyjny proces redukcji, oparte na kodzie z wykladu
+while true
+    % Znalezienie największego elementu poza przekątną
+    maxVal = max(abs(triu(A, 1)), [], 'all'); % Maksymalny element w górnej części macierzy
+    [p, q] = find(abs(triu(A, 1)) == maxVal, 1);    % Znajdź wiersz i kolumnę tego elementu
+    if maxVal < tol
+        break; % Jeżeli wszystkie elementy poza przekątną są bliskie zera- koniec dzialania
+    end
+
+
+
+    % Element algorytmu Jacobiego - zerowanie elementu A(p,q)
+    xi = (A(q, q) - A(p, p)) / (2 * A(p, q));
+    if xi > -eps
+        t = (abs(xi) + sqrt(1 + xi^2));
+    else
+        t = -(abs(xi) + sqrt(1 + xi^2));
+    end
+    c = 1 / sqrt(1 + t^2);
+    s = t * c;
+
+    % Macierz rotacji
+    R = eye(N);
+    R(p, p) = c; R(q, q) = c;
+    R(p, q) = -s; R(q, p) = s;
+
+    % Aktualizacja macierzy A
+    A = R.' * A * R;
+end
+
+disp('Macierz po przekształceniu:');
+disp(A);
