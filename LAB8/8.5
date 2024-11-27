@@ -1,0 +1,54 @@
+clear all; close all;
+
+% ======= Trudne macierze =======
+% 1. Macierz o bliskich wartościach własnych (symetryczna)
+A1 = [1 0.99 0.98;
+      0.99 1 0.99;
+      0.98 0.99 1];
+
+% 2. Macierz o wyznaczniku bliskim zeru
+A2 = [1 1 1;
+      1 1.0001 1;
+      1 1 1.0002];
+
+% 3. Większa macierz 4x4 z losowymi elementami
+A3 = [4 0.5 0.2 0.1;
+      0.5 3 0.3 0.2;
+      0.2 0.3 2 0.4;
+      0.1 0.2 0.4 1];
+
+% 4. Większa macierz 5x5
+A4 = magic(5);
+
+% ======= Wybór macierzy do analizy =======
+% Zmień numer macierzy poniżej, aby przetestować inne przypadki.
+A = A1;  % Możesz zmienić na A2, A3, A4
+
+% ======= Iteracyjna dekompozycja QR =======
+[N, ~] = size(A);  % Rozmiar macierzy
+x = ones(N, 1);    % Wektor startowy (nieużywany w tym kodzie)
+
+% Inicjalizacja macierzy wynikowej
+A1 = A;  % Kopia macierzy A
+for i = 1:30  % 30 iteracji
+    [Q, R] = qr(A1);  % Dekompzycja QR
+    A1 = R * Q;       % Aktualizacja macierzy
+end
+
+% ======= Wyniki =======
+lambda = diag(A1);       % Wartości własne na przekątnej
+ref = eig(A);            % Wartości własne z MATLAB-a
+
+% ======= Wyświetlanie wyników =======
+disp('Macierz analizowana:');
+disp(A);
+
+disp('Wartości własne z metody QR:');
+disp(lambda);
+
+disp('Wartości własne z funkcji eig:');
+disp(ref);
+
+% ======= Porównanie wyników =======
+disp('Różnica między wynikami (norma różnicy):');
+disp(norm(sort(lambda) - sort(ref)));
