@@ -1,0 +1,38 @@
+clear all; close all;
+
+% Wybór lub definicja symetrycznej macierzy kwadratowej
+if (1)
+    A = [4 0.5;
+         0.5 1]; % Przykładowa symetryczna macierz 2x2
+else
+    A = magic(4); % Alternatywna opcja - magiczna macierz 4x4
+end
+
+% Wymiary macierzy
+[N, N] = size(A);
+
+% Inicjalizacja wektora
+x = ones(N, 1);
+
+% Iteracyjny proces znajdowania wartości własnej i wektora własnego
+for i = 1:20
+    y = A * x; % Pierwsze mnożenie macierzy przez wektor
+    [ymax, imax] = max(abs(y)); % Największa wartość bezwzględna w wyniku
+    x = y / ymax; % Normalizacja wektora własnego
+    lambda = ymax; % Przybliżenie największej wartości własnej
+end
+
+% Wyświetlenie wyniku iteracyjnego
+disp('Wektor własny:');
+disp(x);
+disp('Wartość własna:');
+disp(lambda);
+
+% Porównanie z funkcją Matlaba
+[V, D] = eig(A); % Obliczanie wartości i wektorów własnych za pomocą funkcji `eig`
+
+% Wyświetlenie wyników funkcji Matlaba
+disp('Wektory własne (Matlab):');
+disp(V);
+disp('Wartości własne (Matlab):');
+disp(D);
