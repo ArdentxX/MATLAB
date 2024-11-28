@@ -19,10 +19,10 @@ S = [1 0;
 [x,V,phi] = elipsa(S,1,N);
 R= [cos(phi), sin(phi);
    -sin(phi), cos(phi)],
-figure; plot(x(1,:),x(2,:), 'ro'); grid; hold on;
+figure; plot(x(1,:),x(2,:), 'bo'); grid; hold on;
 x = x .* (2*(rand(1,N)-0.5));
 %x = x .* (0.33*(randn(1,N)));
-plot(x(1,:),x(2,:), 'b*'); grid;
+plot(x(1,:),x(2,:), 'g*'); grid;
 xlabel('x'); ylabel('y'); title('Circle/Ellipse'); grid; axis square
 
 function [u,V,phi] = elipsa(S,r,N)
