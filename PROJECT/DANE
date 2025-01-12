@@ -1,0 +1,68 @@
+% Rozwiązywanie równania przewodnictwa ciepła metodą klasyczną i Monte Carlo
+clear all; close all; clc;
+
+%% Parametry
+L = 1;              % Długość pręta [m]
+N = 20;             % Liczba punktów wewnętrznych
+Tp = 20;            % Temperatura na początku pręta [°C]
+Tk = -20;           % Temperatura na końcu pręta [°C]
+M = 10000;          % Liczba symulacji Monte Carlo w każdym punkcie
+
+dx = L / (N+1);     % Rozmiar siatki (odległość między punktami)
+x = linspace(0, L, N+2)'; % Punkty na pręcie (łącznie z brzegami)
+
+%% Metoda klasyczna - równania liniowe
+D = diag(-2*ones(N,1), 0) + diag(ones(N-1,1), 1) + diag(ones(N-1,1), -1);
+b = zeros(N, 1);
+b(1) = -Tp; % Warunki brzegowe na początku
+b(N) = -Tk; % Warunki brzegowe na końcu
+
+% Rozwiązywanie układu równań
+T_classic = D \ b;
+
+% Dodaj warunki brzegowe
+T_classic_full = [Tp; T_classic; Tk];
+
+%% Metoda Monte Carlo
+T_mc = zeros(N+2, 1); % Wyniki Monte Carlo
+T_mc(1) = Tp;         % Warunki brzegowe
+T_mc(end) = Tk;
+
+for i = 2:N+1
+    temp_sum = 0; % Suma temperatur dla Monte Carlo
+    for j = 1:M
+        position = x(i); % Start w punkcie x(i)
+        while position > 0 && position < L
+            % Losowy ruch w lewo lub w prawo
+            step = (rand > 0.5) * dx - (~(rand > 0.5)) * dx;
+            position = position + step;
+        end
+        % Sprawdzenie, który brzeg osiągnęliśmy
+        if position <= 0
+            temp_sum = temp_sum + Tp; % Brzeg lewy
+        else
+            temp_sum = temp_sum + Tk; % Brzeg prawy
+        end
+    end
+    % Średnia temperatura w punkcie x(i)
+    T_mc(i) = temp_sum / M;
+end
+
+%% Wykresy obok siebie
+figure;
+
+% Wykres metody klasycznej
+subplot(1, 2, 1); % 1 wiersz, 2 kolumny, pierwszy wykres
+plot(x, T_classic_full, 'r-', 'LineWidth', 2); grid on;
+xlabel('Punkty x [m]');
+ylabel('Temperatura [°C]');
+title('Metoda klasyczna');
+
+% Wykres metody Monte Carlo
+subplot(1, 2, 2); % 1 wiersz, 2 kolumny, drugi wykres
+plot(x, T_mc, 'bo--', 'LineWidth', 1.5); grid on;
+xlabel('Punkty x [m]');
+ylabel('Temperatura [°C]');
+title('Metoda Monte Carlo');
+
+sgtitle('Porównanie metod: klasyczna vs Monte Carlo'); % Tytuł dla całej figury
