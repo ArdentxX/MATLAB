@@ -1,0 +1,34 @@
+clear all; close all;
+t=10; % czas trwania sygnału w sekundach
+fpr=44100; Nx=fpr*t; % częstotliwość próbkowania, liczba próbek
+dt = 1/fpr; % okres próbkowania
+n = 0 : Nx-1; % numery próbek
+t = dt*n; % chwile próbkowania
+
+A1=1; f1=10; p1=0; % amplituda, częstotliwość początkowa, faza
+fd=1; % przyrost częstotliwości na sekundę
+
+f = n * (fd / fpr) + f1; % częstotliwość zmieniająca się liniowo
+x1 = A1 * sin(2 * pi * f .* t + p1); % generacja sygnału
+
+%sound(x1, fpr); % odtworzenie dźwięku
+pause(t); % pauza, aby dźwięk się odtworzył w całości
+
+plot(t, x1); grid on;
+title("Sygnal x(t)");
+xlabel("Czas [s]");
+ylabel("Amplituda");
+
+% Ustawienie zakresu wykresu
+axis([0 2 -1.5 1.5]);
+[y,fpr] = audioread("triple.wav");
+Nx=length(y);% wyciaganie z listy skalara próbek (ilości próbek)
+t=Nx/fpr; % liczenie czasu z prubek i czestotliwości próbkowania
+fprintf("częstotliwość próbkowania: "+fpr+"Hz\n");
+fprintf("ilość próbek: "+Nx+"\n");
+fprintf("czas: "+t+"s\n");
+fprintf("min: "+min(y)+"\n");
+fprintf("max: "+max(y)+"\n");
+fprintf("odchylenie standardowe: "+std(y)+"\n");
+d=2; %współczynnik zmiany częstotliwości odtwarzania
+sound(x1,fpr/2);
