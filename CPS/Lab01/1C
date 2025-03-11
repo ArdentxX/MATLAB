@@ -1,0 +1,29 @@
+clc; clear; close all;
+%1C
+fs = 100;
+A = 1;
+T = 1;
+t = 0:1/fs:T;
+
+
+for f = 0:5:300
+    y = A * sin(2 * pi * f * t);
+    figure(1);
+    plot(t, y);
+    grid on;
+    title(['sinusoida - Iteracja: ', num2str(f/5 + 1), ', f = ', num2str(f), ' Hz']);
+    pause(0.1)
+end
+
+f_values = [5, 105, 205; 95, 195, 295; 95, 105,NaN];
+
+for i = 1:3
+    figure;
+    hold on;
+    for j = 1:size(f_values, 2)
+        f = f_values(i, j);
+        y = A * sin(2 * pi * f * t);
+        plot(t, y);
+    end
+    grid on;
+end
