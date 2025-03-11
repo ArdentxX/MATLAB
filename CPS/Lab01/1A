@@ -1,0 +1,23 @@
+clc; clear; close all;
+%1A
+A = 230;
+f = 50;
+T = 0.1;
+
+fs1 = 10000;
+fs2 = 500;
+fs3 = 200;
+
+t1 = 0:1/fs1:T;
+t2 = 0:1/fs2:T;
+t3 = 0:1/fs3:T;
+
+y1 = A * sin(2*pi*f*t1);
+y2 = A * sin(2*pi*f*t2);
+y3 = A * sin(2*pi*f*t3);
+
+figure;
+plot(t1, y1, 'b-'); hold on;
+plot(t2, y2, 'r-o');
+plot(t3, y3, 'k-x');
+grid on;

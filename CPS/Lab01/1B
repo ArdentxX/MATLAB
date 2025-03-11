@@ -1,0 +1,47 @@
+%1B
+clc; clear; close all;
+
+
+A = 230;
+f = 50;
+T = 1;
+fs1 = 10000;
+fs2 = 51;
+fs3 = 50;
+fs4 = 49;
+
+t1 = 0:1/fs1:T;
+t2 = 0:1/fs2:T;
+t3 = 0:1/fs3:T;
+t4 = 0:1/fs4:T;
+
+y1 = A * sin(2*pi*f*t1);
+y2 = A * sin(2*pi*f*t2);
+y3 = A * sin(2*pi*f*t3);
+y4 = A * sin(2*pi*f*t4);
+
+figure;
+plot(t1, y1, 'b-'); hold on;
+plot(t2, y2, 'g-o');
+plot(t3, y3, 'r-o');
+plot(t4, y4, 'k-o');
+grid on;
+
+fs2 = 26;
+fs3 = 25;
+fs4 = 24;
+
+t2 = 0:1/fs2:T;
+t3 = 0:1/fs3:T;
+t4 = 0:1/fs4:T;
+
+y2 = A * sin(2*pi*f*t2);
+y3 = A * sin(2*pi*f*t3);
+y4 = A * sin(2*pi*f*t4);
+
+figure;
+plot(t1, y1, 'b-'); hold on;
+plot(t2, y2, 'g-o');
+plot(t3, y3, 'r-o');
+plot(t4, y4, 'k-o');
+grid on;
