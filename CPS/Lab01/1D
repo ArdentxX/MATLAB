@@ -1,0 +1,68 @@
+clc; clear; close all;
+
+%% Parametry sygnału
+fs = 10000;      % Częstotliwość próbkowania (wysoka) [Hz]
+fn = 50;         % Częstotliwość nośna [Hz]
+fm = 1;          % Częstotliwość modulująca [Hz]
+df = 5;          % Głębokość modulacji [Hz]
+T = 1;           % Czas trwania sygnału [s]
+
+%% Oś czasu
+t = 0:1/fs:T;
+
+%% Sygnał modulujący
+modulating_signal = df * sin(2 * pi * fm * t);
+
+%% Sygnał zmodulowany (SFM)
+modulated_signal = sin(2 * pi * (fn + modulating_signal) .* t);
+
+%% Wykres: Sygnał modulujący vs. Zmodulowany
+figure;
+subplot(2,1,1);
+plot(t, modulating_signal, 'r');
+xlabel('Czas [s]'); ylabel('Amplituda');
+title('Sygnał modulujący (fm = 1 Hz)');
+grid on;
+
+subplot(2,1,2);
+plot(t, modulated_signal, 'b');
+xlabel('Czas [s]'); ylabel('Amplituda');
+title('Sygnał zmodulowany SFM');
+grid on;
+
+%% Próbkowanie sygnału z fs = 25 Hz
+fs_down = 25;
+t_down = 0:1/fs_down:T;
+modulated_signal_down = sin(2 * pi * (fn + df * sin(2 * pi * fm * t_down)) .* t_down);
+
+%% Porównanie sygnału "analogowego" i próbkowanego
+figure;
+hold on;
+plot(t, modulated_signal, 'b', 'DisplayName', 'Sygnał analogowy');
+stem(t_down, modulated_signal_down, 'r', 'DisplayName', 'Sygnał próbkowany');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+title('Porównanie sygnału analogowego i próbkowanego');
+legend show;
+grid on;
+hold off;
+
+%% Rysowanie błędów próbkowania
+error_signal = interp1(t_down, modulated_signal_down, t, 'nearest') - modulated_signal;
+
+figure;
+plot(t, error_signal, 'k');
+xlabel('Czas [s]');
+ylabel('Błąd');
+title('Błędy spowodowane próbkowaniem');
+grid on;
+
+%% Widma gęstości mocy przed i po próbkowaniu
+figure;
+subplot(2,1,1);
+pwelch(modulated_signal, [], [], [], fs);
+title('Widmo gęstości mocy - sygnał przed próbkowaniem');
+
+subplot(2,1,2);
+pwelch(modulated_signal_down, [], [], [], fs_down);
+title('Widmo gęstości mocy - sygnał po próbkowaniu');
