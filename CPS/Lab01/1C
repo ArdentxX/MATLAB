@@ -15,15 +15,31 @@ for f = 0:5:300
     pause(0.1)
 end
 
-f_values = [5, 105, 205; 95, 195, 295; 95, 105,NaN];
+figure;
+hold on;
+y5 = A * sin(2 * pi * 5 * t);
+y105 = A * sin(2 * pi * 105 * t);
+y205 = A * sin(2 * pi * 205 * t);
+plot(t, y5,'g-x');
+plot(t,y105);
+plot(t,y205,'r-o')
+grid on;
 
-for i = 1:3
-    figure;
-    hold on;
-    for j = 1:size(f_values, 2)
-        f = f_values(i, j);
-        y = A * sin(2 * pi * f * t);
-        plot(t, y);
-    end
-    grid on;
-end
+figure;
+hold on;
+y95 = A * sin(2 * pi * 95 * t);
+y195 = A * sin(2 * pi * 195 * t);
+y295 = A * sin(2 * pi * 295 * t);
+plot(t, y95,'g-x');
+plot(t,y195);
+plot(t,y295,'r-o')
+grid on;
+
+figure;
+hold on;
+y95 = A * sin(2 * pi * 95 * t);
+y105 = A * sin(2 * pi * 105 * t);
+plot(t, y95,'g-x');
+plot(t,y105,'r-o')
+grid on;
+
