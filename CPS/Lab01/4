@@ -1,0 +1,32 @@
+clc; clear; close all;
+%1A
+f = 16000;
+T = 0.1;
+fc=500;
+
+imie='Kacper';
+
+d= double(imie);
+
+bin=dec2bin(d);
+bit =bin(:)'-'0';
+t =0:1/f:T-1/f;
+x =[];
+for i=1:length(bit)
+    if bit(i) == 1
+        y =sin(2*pi*fc*t);
+    else
+         y =-sin(2*pi*fc*t);
+    end
+    x=[x,y];
+end
+
+figure
+plot(0:1/f:length(x)/f - 1/f,x)
+soundsc(x, f);
+fpr_test = [8000, 16000, 24000, 32000, 48000];
+
+for fs = fpr_test
+    disp(num2str(fs));
+    soundsc(x, fs);
+end
