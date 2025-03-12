@@ -1,0 +1,11 @@
+clc; clear; close all;
+
+data = load('adsl_x.mat');
+s=data.x;
+M=s(1:32);
+
+[wartoscikorelacji,wektoropoznien] = xcorr(s, M);
+
+[piki, indeksy] = findpeaks(wartoscikorelacji, 'MinPeakHeight', 0.5*max(wartoscikorelacji));
+prefiks_pozycje = wektoropoznien(indeksy);
+disp(prefiks_pozycje);
