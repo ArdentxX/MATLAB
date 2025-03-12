@@ -1,53 +1,31 @@
 clc; clear; close all;
 
-%% Parametry sygnału
-A = 230;      % Amplituda [V]
-f = 50;       % Częstotliwość sygnału [Hz]
-fs_analog = 10000;  % Częstotliwość pseudo analogowa [Hz]
-fs_sampled = 200;   % Częstotliwość próbkowania [Hz]
-T = 0.1;      % Czas trwania [s]
+A = 230;
+f = 50;
+fa = 10000;
+fs = 200;
+T = 0.1;
 
-%% Generacja sygnału pseudo analogowego
-t_analog = 0:1/fs_analog:T;
-x_analog = A * sin(2 * pi * f * t_analog);
+ta = 0:1/fa:T;
+ya = A*sin(2*pi*f*ta);
 
-%% Generacja sygnału spróbkowanego
-t_sampled = 0:1/fs_sampled:T;
-x_sampled = A * sin(2 * pi * f * t_sampled);
-
-%% Rekonstrukcja sygnału za pomocą funkcji sinc()
-t_reconstruct = t_analog;  % Odtwarzamy na tych samych chwilach co pseudo-analogowy
-x_reconstruct = zeros(size(t_reconstruct));
-
-% Rekonstrukcja metodą sinc()
-for idx = 1:length(t_reconstruct)
-    t = t_reconstruct(idx);
-    x_reconstruct(idx) = 0;
-    for n = 1:length(t_sampled)  % Sumujemy po próbkach
-        T_s = 1/fs_sampled;  % Okres próbkowania
-        x_reconstruct(idx) = x_reconstruct(idx) + x_sampled(n) * sinc((t - t_sampled(n)) / T_s);
-    end
+ts = 0:1/fs:T;
+ys = A*sin(2*pi*f*ts);
+tp=ta;
+xhat = zeros(size(tp));
+for idx = 1:length(tp)
+        t = tp(idx);
+        xhat(idx) = 0;
+        for n = 1:length(ts)
+            xhat(idx) = xhat(idx)+ ys(n)* sinc((t - ts(n)) /(1/fs));
+        end
 end
 
-%% Wykresy
-figure;
-hold on;
-plot(t_analog, x_analog, 'b', 'DisplayName', 'Pseudo-analogowy (fs = 10 kHz)');
-stem(t_sampled, x_sampled, 'r', 'DisplayName', 'Spróbkowany (fs = 200 Hz)', 'MarkerSize', 5);
-plot(t_reconstruct, x_reconstruct, 'g', 'DisplayName', 'Zrekonstruowany (sinc)', 'LineWidth', 1.2);
-xlabel('Czas [s]');
-ylabel('Amplituda [V]');
-title('Rekonstrukcja sygnału za pomocą sinc()');
-legend;
-grid on;
-hold off;
+blad =ya-xhat;
 
-%% Obliczenie błędu rekonstrukcji
-error_signal = x_analog - x_reconstruct;
-
-figure;
-plot(t_analog, error_signal, 'k');
-xlabel('Czas [s]');
-ylabel('Błąd rekonstrukcji [V]');
-title('Błąd rekonstrukcji');
+figure
+plot(ta,ya);hold on;
+plot(ts,ys);
+plot(tp,xhat,"r--");
+plot(ta,blad,"x");
 grid on;
