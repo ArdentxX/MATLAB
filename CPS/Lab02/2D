@@ -1,0 +1,47 @@
+N=20;
+A = randn(N,N);
+S = inv(A);
+
+for k=1:N
+    v1 =A(k,:);
+    for n=1:N
+        if not(k==n)
+            v2 =A(n,:);
+            prod1 =v1*v2';
+            if abs(prod1) < 10^-13
+                disp(prod1 + " sa ortagonalne "+ k+" "+n);
+            end
+        end
+    end
+end
+if isequal(round(S * A, 10), I)
+    disp("zgadza się")
+end
+X=A*x;
+xs = S*X;
+
+if isequal(round(xs, 10), round(x, 10))
+    disp("zgadza się")
+end
+AF = zeros(N, N);
+for k=0:N-1
+     if k==0
+        s=sqrt(1/N);
+    else
+        s=sqrt(2/N);
+    end
+    AF(k+1,1:N)=s*cos(pi*((k+0.25)/N)*((0:N-1)+1/2));
+end
+
+for k=1:N
+    v1 =AF(k,:);
+    for n=1:N
+        if not(k==n)
+            v2 =AF(n,:);
+            prod1 =v1*v2';
+            if abs(prod1) < 10^-15
+                disp(prod1 + " sa ortagonalne "+ k+" "+n);
+            end
+        end
+    end
+end
