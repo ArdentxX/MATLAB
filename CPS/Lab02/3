@@ -1,0 +1,74 @@
+clc; clear; close all;
+N = 100;
+fs = 1000;
+f1 = 50;
+f2 = 100;
+f3 = 150;
+A1 = 50;
+A2 = 100;
+A3 = 150;
+t1 = 0:1/fs:(N-1)/fs;
+
+
+x = A1 * sin(2*pi*f1*t1) + A2 * sin(2*pi*f2*t1) + A3 * sin(2*pi*f3*t1);
+x = x.';
+
+
+A = zeros(N,N);
+for k=0:N-1
+     if k==0
+        s=sqrt(1/N);
+    else
+        s=sqrt(2/N);
+    end
+    A(k+1,1:N) = s * cos(pi*(k/N) * ((0:N-1) + 1/2));
+end
+
+S = A.';
+for i =1:N
+    A(i, 1:N)
+    S(1:N, i)
+hold on;
+    plot(A(i, 1:N))
+    plot(S(1:N, i))
+    pause(0.1)
+end
+
+
+Y = A * x;
+
+
+f = (0:N-1) * fs / N / 2;
+
+figure;
+plot(f, abs(Y));
+grid on;
+
+xr = S * Y;
+rekonstrukcja_ok = all(abs(xr - x) < 1e-10);
+disp(num2str(rekonstrukcja_ok));
+
+f2 = 105;
+x = A1 * sin(2*pi*f1*t1) + A2 * sin(2*pi*f2*t1) + A3 * sin(2*pi*f3*t1);
+x = x.';
+Y = A * x;
+
+figure;
+plot(f, abs(Y));
+grid on;
+
+xr = S * Y;
+rekonstrukcja_ok = all(abs(xr - x) < 1e-10);
+disp(num2str(rekonstrukcja_ok));
+
+
+f1 = f1 + 2.5;
+f2 = f2 + 2.5;
+f3 = f3 + 2.5;
+x = A1 * sin(2*pi*f1*t1) + A2 * sin(2*pi*f2*t1) + A3 * sin(2*pi*f3*t1);
+x = x.';
+Y = A * x;
+
+figure;
+plot(f, abs(Y));
+grid on;
