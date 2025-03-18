@@ -1,0 +1,26 @@
+clear all; close all
+N=20;
+
+A = zeros(N, N);
+for k=0:N-1
+     if k==0
+        s=sqrt(1/N);
+    else
+        s=sqrt(2/N);
+    end
+    A(k+1,1:N)=s*cos(pi*(k/N)*((0:N-1)+1/2));
+end
+S = A.';
+I = eye(N,N);
+
+if isequal(round(S * A, 10), I)
+    disp("zgadza się")
+end
+x=randn(N,1);
+
+X=A*x;
+xs = S*X;
+
+if isequal(round(xs, 10), round(x, 10))
+    disp("zgadza się")
+end
