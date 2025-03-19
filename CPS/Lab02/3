@@ -25,15 +25,15 @@ for k=0:N-1
 end
 
 S = A.';
+figure;
 for i =1:N
     A(i, 1:N)
     S(1:N, i)
 hold on;
-    plot(A(i, 1:N))
-    plot(S(1:N, i))
-    pause(0.1)
+    plot(A(i, 1:N),"b-o")
+    plot(S(1:N, i),"r")
+    pause(0.5)
 end
-
 
 Y = A * x;
 
@@ -41,7 +41,7 @@ Y = A * x;
 f = (0:N-1) * fs / N / 2;
 
 figure;
-plot(f, abs(Y));
+plot(f, Y);
 grid on;
 
 xr = S * Y;
@@ -54,7 +54,7 @@ x = x.';
 Y = A * x;
 
 figure;
-plot(f, abs(Y));
+plot(f, Y);
 grid on;
 
 xr = S * Y;
@@ -70,5 +70,5 @@ x = x.';
 Y = A * x;
 
 figure;
-plot(f, abs(Y));
+plot(f, Y);
 grid on;
