@@ -1,3 +1,4 @@
+clear all; close all
 N=20;
 A = randn(N,N);
 S = inv(A);
@@ -14,6 +15,8 @@ for k=1:N
         end
     end
 end
+x=randn(N,1);
+I = eye(N,N);
 if isequal(round(S * A, 10), I)
     disp("zgadza się")
 end
