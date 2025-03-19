@@ -2,7 +2,7 @@
 fs = 8000;  % Częstotliwość próbkowania
 [x, fs] = audioread('mowa.wav'); % Wczytaj sygnał dźwiękowy
 plot(x); title('Oryginalny sygnał'); xlabel('Numer próbki'); ylabel('Amplituda');
-soundsc(x, fs); % Odsłuchaj sygnał
+% soundsc(x, fs); % Odsłuchaj sygnał
 
 
 c = dct(x);
@@ -10,15 +10,12 @@ figure;
 stem(c);
 
 
-c_filtered = c;
-c_filtered(c < 50) = 0;
-y = idct(c_filtered);
-figure; plot(y);title("Sygnał 25%");
-soundsc(y, fs);
 
-c_band = c;
-c_band(100:200) = 0;
-y_band = idct(c_band);
+y = idct([c(1:2000); zeros(length(c)-8000,1)]);
+figure; plot(y);title("Sygnał 25%");
+% soundsc(y, fs);
+
+y_band = idct([c(2000:8000); zeros(length(c)-8000,1)]);
 figure; plot(y_band);title("Sygnał 75%");
 soundsc(y_band, fs);
 
@@ -27,7 +24,7 @@ soundsc(y_band, fs);
 % 4. Dodanie zakłócenia sinusoidalnego 250 Hz
 x_noise = x + 0.5*sin(2*pi*250/fs*(0:length(x)-1)');
 figure; plot(x_noise); title('Sygnał z zakłóceniem');
-soundsc(x_noise, fs);
+% soundsc(x_noise, fs);
 
 
 c_noise = dct(x_noise);
@@ -37,4 +34,5 @@ x_clean = idct(c_noise);
 
 % 6. Odsłuch i wyświetlenie wyników
 figure; plot(x_clean); title('Oczyszczony sygnał');
-soundsc(x_clean, fs);
+% soundsc(x_clean, fs);
+
