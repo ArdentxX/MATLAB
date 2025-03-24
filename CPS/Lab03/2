@@ -1,0 +1,74 @@
+clc; clear all; close all;
+fs =1000;
+N= 100;
+f1= 125;
+f2 = 200;
+A1 = 100;
+A2=200;
+fi1=pi/7;
+fi2=pi/11;
+A = zeros(N,N);
+for k =0:N-1
+    for n =0:N-1
+        A(k+1,n+1)=(1/sqrt(N))*exp(-k*n*j*(2*pi/N));
+    end
+end
+f=0:0.25:1000;
+t = (0:N-1)/fs;
+x = A1*cos(2*pi*f1*t + fi1) + A2*cos(2*pi*f2*t + fi2);
+X1 =A*x.';
+M=100;
+xz = [x, zeros(1, M)];
+X2 = fft(xz)./(N+M);
+X3 = zeros(1, length(f));
+for idx = 1:length(f)
+    X3(idx) = (1/N) * sum(x .* exp(-1j * 2 * pi * f(idx) / fs * (0:N-1)));
+end
+fx3 = f;
+fx2 = fs * (0:(N+M)-1) / (N+M);
+fx1 = fs * (0:N-1) / N / 2;
+figure;
+subplot(3,1,1);
+plot(fx1, abs(X1));
+title('Widmo X1 (DFT)');
+xlabel('Częstotliwość [Hz]');
+ylabel('|X1(f)|');
+grid on;
+
+subplot(3,1,2);
+plot(fx2, abs(X2));
+title('Widmo X2 (DFT z dodanymi zerami)');
+xlabel('Częstotliwość [Hz]');
+ylabel('|X2(f)|');
+grid on;
+
+subplot(3,1,3);
+plot(fx3, abs(X3));
+title('Widmo X3 (DtFT)');
+xlabel('Częstotliwość [Hz]');
+ylabel('|X3(f)|');
+grid on;
+
+figure;
+plot(fx1, abs(X1), 'o', fx2, abs(X2), 'bx', fx3, abs(X3), 'k-');
+title('Porównanie widm X1, X2 i X3 dla f=0:fs/2');
+xlabel('Częstotliwość [Hz]');
+ylabel('|X(f)|');
+legend('X1 (DFT)', 'X2 (DFT z zerami)', 'X3 (DtFT)');
+grid on;
+
+% Obliczenie X3 dla f=-2000:0.25:2000 Hz (-2fs:df:2fs)
+f_full = -2000:0.25:2000;
+X3_full = zeros(1, length(f_full));
+for idx = 1:length(f_full)
+    X3_full(idx) = (1/N) * sum(x .* exp(-1j * 2 * pi * f_full(idx) / fs * (0:N-1)));
+end
+
+% Rysowanie drugiego wykresu dla f=-2fs:2fs
+figure;
+plot(fx1, abs(X1), 'o', fx2, abs(X2), 'bx', f_full, abs(X3_full), 'k-');
+title('Porównanie widm X1, X2 i X3 dla f=-2fs:2fs');
+xlabel('Częstotliwość [Hz]');
+ylabel('|X(f)|');
+legend('X1 (DFT)', 'X2 (DFT z zerami)', 'X3 (DtFT)');
+grid on;
