@@ -1,0 +1,99 @@
+clc; clear all; close all;
+fs =1000;
+N= 100;
+f1= 100;
+f2 = 200;
+A1 = 100;
+A2=200;
+fi1=pi/7;
+fi2=pi/11;
+A = zeros(N,N);
+for k =0:N-1
+    for n =0:N-1
+        A(k+1,n+1)=(1/sqrt(N))*exp(-k*n*j*(2*pi/N));
+    end
+end
+t = (0:N-1)/fs;
+x = A1*cos(2*pi*f1*t + fi1) + A2*cos(2*pi*f2*t + fi2);
+X =A*x.';
+
+f = (0:N-1) * (fs/N);
+
+figure;
+subplot(2,2,1);
+plot(f, real(X), 'b'); title('Część rzeczywista X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,2);
+plot(f, imag(X), 'r'); title('Część urojona X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,3);
+plot(f, abs(X), 'k'); title('Moduł X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,4);
+plot(f, angle(X), 'g'); title('Faza X'); xlabel('Częstotliwość [Hz]'); ylabel('Faza [rad]');
+grid on;
+
+B=A';
+xr=B*X;
+figure;
+subplot(3,1,1);
+plot(t, x, 'b', 'LineWidth', 1.5);
+title('Oryginalny sygnał x(t)');
+xlabel('Czas [s]'); ylabel('Amplituda');
+grid on;
+
+subplot(3,1,2);
+plot(t, real(xr), 'r', 'LineWidth', 1.5);
+title('Zrekonstruowany sygnał xr(t)');
+xlabel('Czas [s]'); ylabel('Amplituda');
+grid on;
+X = fft(x); % FFT wbudowane w MATLAB
+xr = ifft(X); % Odwrotna FFT
+
+figure;
+subplot(3,1,1);
+plot(t, x, 'b', 'LineWidth', 1.5);
+title('Oryginalny sygnał x(t) nowe funkcje');
+xlabel('Czas [s]'); ylabel('Amplituda');
+grid on;
+
+subplot(3,1,2);
+plot(t, real(xr), 'r--', 'LineWidth', 1.5);
+title('Zrekonstruowany sygnał xr(t) nowe funkcje');
+xlabel('Czas [s]'); ylabel('Amplituda');
+grid on;
+
+
+A = zeros(N,N);
+for k =0:N-1
+    for n =0:N-1
+        A(k+1,n+1)=(1/sqrt(N))*exp(-k*n*j*(2*pi/N));
+    end
+end
+
+
+t = (0:N-1)/fs;
+x = A1*cos(2*pi*100*t + fi1) + A2*cos(2*pi*125*t + fi2);
+X =A*x.';
+
+f = (0:N-1) * (fs/N);
+
+figure;
+subplot(2,2,1);
+plot(f, real(X), 'b'); title('Część rzeczywista X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,2);
+plot(f, imag(X), 'r'); title('Część urojona X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,3);
+plot(f, abs(X), 'k'); title('Moduł X'); xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+grid on;
+
+subplot(2,2,4);
+plot(f, angle(X), 'g'); title('Faza X'); xlabel('Częstotliwość [Hz]'); ylabel('Faza [rad]');
+grid on;
