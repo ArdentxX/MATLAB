@@ -1,0 +1,36 @@
+clc; clear; close all;
+% Wczytanie pliku .mat
+load('lab_03.mat');
+
+% Wybór sygnału x_15
+signal_index = mod(420462, 16) + 1;
+signal_name = sprintf('x_%d', signal_index);
+signal = eval(signal_name);
+
+% Parametry sygnału
+K = 8;      % Liczba ramek
+N = 512;    % Długość ramki
+M = 32;     % Długość prefiksu
+
+% Macierz na wyniki FFT
+fft_results = zeros(K, N);
+
+% Analiza ramek
+for m = 0:K-1
+    start_idx = m * (N + M) + M + 1; % Początek ramki po usunięciu prefiksu
+    frame = signal(start_idx:start_idx + N - 1); % Pobranie ramki
+
+    % Obliczenie FFT
+    fft_results(m+1, :) = fft(frame, N);
+end
+
+% Wyznaczenie używanych harmonicznych (próg: 10% max wartości)
+threshold = 0.1 * max(abs(fft_results(:)));
+used_harmonics = any(abs(fft_results) > threshold, 1);
+
+% Indeksy używanych harmonicznych
+harmonic_indices = find(used_harmonics);
+
+% Wyświetlenie wyników
+disp('Używane harmoniczne:');
+disp(harmonic_indices);
