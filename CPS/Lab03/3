@@ -1,70 +1,57 @@
-clc; clear; close all;
+clc; clear all; close all;
 
-fs = 1000; % Częstotliwość próbkowania
-N = 100; % Liczba próbek
-f1 = 100; f2 = 125; % Częstotliwości składowych
-A1 = 1; A2 = 0.0001; % Amplitudy
-t = (0:N-1)/fs; % Oś czasu
+% Parametry
+N = 100; fs = 1000; st = 1/fs; T = N/fs;
+sample = 0:st:T-st;
+
+% Częstotliwości i amplitudy
+f1 = 100; f2 = 125;
+A1 = 1; A2 = 0.0001;
+p1 = pi/7; p2 = pi/11;
 
 % Sygnał
-x = A1 * cos(2 * pi * f1 * t) + A2 * cos(2 * pi * f2 * t);
+x = A1 * cos(2*pi*f1*sample + p1) + A2 * cos(2*pi*f2*sample + p2);
+
+% Obliczanie DtFT
+f = 0:0.1:500;
+X = arrayfun(@(fi) sum(x .* exp(-1i*2*pi*fi*(0:N-1)/fs)), f) / N;
+
+% Rysowanie widma
+figure;
+plot(f, abs(X)); title('Widmo DtFT sygnału x'); xlabel('Częstotliwość [Hz]');
 
 % Okna
-w_rect = rectwin(N)';
-w_hamm = hamming(N)';
-w_black = blackman(N)';
-w_cheb100 = chebwin(N, 100)';
-w_cheb120 = chebwin(N, 120)';
+windows = {rectwin(N), hamming(N), blackman(N), chebwin(N, 100), chebwin(N, 120)};
+labels = {'Prostokątne', 'Hamming', 'Blackman', 'Czebyszew 100 dB', 'Czebyszew 120 dB'};
 
-% Widma dla różnych okien
-X_rect = fft(x .* w_rect, N);
-X_hamm = fft(x .* w_hamm, N);
-X_black = fft(x .* w_black, N);
-X_cheb100 = fft(x .* w_cheb100, N);
-X_cheb120 = fft(x .* w_cheb120, N);
+% Obliczanie DtFT dla różnych okien
+figure; hold on;
+for i = 1:length(windows)
+    Xw = arrayfun(@(fi) sum((x' .* windows{i}) .* exp(-1i*2*pi*fi*(0:N-1)'/fs)), f) / N;
+    plot(f, abs(Xw));
+end
+legend(labels);
+title('Widma sygnału po zastosowaniu okien'); xlabel('Częstotliwość [Hz]');
 
-% Oś częstotliwości
-f = (0:N-1) * (fs/N);
+% Wykresy okien
+figure; hold on;
+for i = 1:length(windows)
+    plot(0:N-1, windows{i});
+end
+legend(labels);
+title('Funkcje okien');
 
-% Wykres widm
-figure;
-plot(f, abs(X_rect), 'b', 'LineWidth', 1.5); hold on;
-plot(f, abs(X_hamm), 'r', 'LineWidth', 1.5);
-plot(f, abs(X_black), 'g', 'LineWidth', 1.5);
-plot(f, abs(X_cheb100), 'm', 'LineWidth', 1.5);
-plot(f, abs(X_cheb120), 'k', 'LineWidth', 1.5);
-legend('Prostokątne', 'Hamming', 'Blackman', 'Czebyszew 100 dB', 'Czebyszew 120 dB');
-xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
-title('Widma dla różnych okien (N = 100)');
-grid on;
+% Powtórzenie dla N = 1000, tylko Czebyszew
+N = 1000; T = N/fs; sample = 0:st:T-st;
+x = A1 * cos(2*pi*f1*sample + p1) + A2 * cos(2*pi*f2*sample + p2);
 
-%% Analiza dla N = 1000
-N = 1000;
-t = (0:N-1)/fs;
-x = A1 * cos(2 * pi * f1 * t) + A2 * cos(2 * pi * f2 * t);
+cheb_windows = {chebwin(N, 100), chebwin(N, 200)};
+cheb_labels = {'Czebyszew 100 dB', 'Czebyszew 200 dB'};
 
-% Okna Czebyszewa z różnym tłumieniem
-w_cheb80 = chebwin(N, 80)';
-w_cheb100 = chebwin(N, 100)';
-w_cheb120 = chebwin(N, 120)';
-w_cheb140 = chebwin(N, 140)';
-
-% Widma dla różnych tłumień Czebyszewa
-X_cheb80 = fft(x .* w_cheb80, N);
-X_cheb100 = fft(x .* w_cheb100, N);
-X_cheb120 = fft(x .* w_cheb120, N);
-X_cheb140 = fft(x .* w_cheb140, N);
-
-% Oś częstotliwości
-f = (0:N-1) * (fs/N);
-
-% Wykres dla różnych tłumień Czebyszewa
-figure;
-plot(f, abs(X_cheb80), 'b', 'LineWidth', 1.5); hold on;
-plot(f, abs(X_cheb100), 'r', 'LineWidth', 1.5);
-plot(f, abs(X_cheb120), 'g', 'LineWidth', 1.5);
-plot(f, abs(X_cheb140), 'm', 'LineWidth', 1.5);
-legend('Czebyszew 80 dB', 'Czebyszew 100 dB', 'Czebyszew 120 dB', 'Czebyszew 140 dB');
-xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
-title('Widma dla różnych tłumień okna Czebyszewa (N = 1000)');
-grid on;
+figure; hold on;
+for i = 1:length(cheb_windows)
+    Xw = arrayfun(@(fi) sum((x' .* cheb_windows{i}) .* exp(-1i*2*pi*fi*(0:N-1)'/fs)), f) / N;
+    plot(f, abs(Xw));
+end
+legend(cheb_labels);
+title('Widma sygnału dla różnych tłumień okna Czebyszewa'); xlabel('Częstotliwość [Hz]');
