@@ -1,0 +1,70 @@
+clc; clear; close all;
+
+fs = 1000; % Częstotliwość próbkowania
+N = 100; % Liczba próbek
+f1 = 100; f2 = 125; % Częstotliwości składowych
+A1 = 1; A2 = 0.0001; % Amplitudy
+t = (0:N-1)/fs; % Oś czasu
+
+% Sygnał
+x = A1 * cos(2 * pi * f1 * t) + A2 * cos(2 * pi * f2 * t);
+
+% Okna
+w_rect = rectwin(N)';
+w_hamm = hamming(N)';
+w_black = blackman(N)';
+w_cheb100 = chebwin(N, 100)';
+w_cheb120 = chebwin(N, 120)';
+
+% Widma dla różnych okien
+X_rect = fft(x .* w_rect, N);
+X_hamm = fft(x .* w_hamm, N);
+X_black = fft(x .* w_black, N);
+X_cheb100 = fft(x .* w_cheb100, N);
+X_cheb120 = fft(x .* w_cheb120, N);
+
+% Oś częstotliwości
+f = (0:N-1) * (fs/N);
+
+% Wykres widm
+figure;
+plot(f, abs(X_rect), 'b', 'LineWidth', 1.5); hold on;
+plot(f, abs(X_hamm), 'r', 'LineWidth', 1.5);
+plot(f, abs(X_black), 'g', 'LineWidth', 1.5);
+plot(f, abs(X_cheb100), 'm', 'LineWidth', 1.5);
+plot(f, abs(X_cheb120), 'k', 'LineWidth', 1.5);
+legend('Prostokątne', 'Hamming', 'Blackman', 'Czebyszew 100 dB', 'Czebyszew 120 dB');
+xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+title('Widma dla różnych okien (N = 100)');
+grid on;
+
+%% Analiza dla N = 1000
+N = 1000;
+t = (0:N-1)/fs;
+x = A1 * cos(2 * pi * f1 * t) + A2 * cos(2 * pi * f2 * t);
+
+% Okna Czebyszewa z różnym tłumieniem
+w_cheb80 = chebwin(N, 80)';
+w_cheb100 = chebwin(N, 100)';
+w_cheb120 = chebwin(N, 120)';
+w_cheb140 = chebwin(N, 140)';
+
+% Widma dla różnych tłumień Czebyszewa
+X_cheb80 = fft(x .* w_cheb80, N);
+X_cheb100 = fft(x .* w_cheb100, N);
+X_cheb120 = fft(x .* w_cheb120, N);
+X_cheb140 = fft(x .* w_cheb140, N);
+
+% Oś częstotliwości
+f = (0:N-1) * (fs/N);
+
+% Wykres dla różnych tłumień Czebyszewa
+figure;
+plot(f, abs(X_cheb80), 'b', 'LineWidth', 1.5); hold on;
+plot(f, abs(X_cheb100), 'r', 'LineWidth', 1.5);
+plot(f, abs(X_cheb120), 'g', 'LineWidth', 1.5);
+plot(f, abs(X_cheb140), 'm', 'LineWidth', 1.5);
+legend('Czebyszew 80 dB', 'Czebyszew 100 dB', 'Czebyszew 120 dB', 'Czebyszew 140 dB');
+xlabel('Częstotliwość [Hz]'); ylabel('Amplituda');
+title('Widma dla różnych tłumień okna Czebyszewa (N = 1000)');
+grid on;
