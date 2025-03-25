@@ -1,0 +1,84 @@
+clear all; close all;
+
+% Wczytanie sygnału EKG
+load('ECG100.mat');
+ecg_signal = val(1, :); % Pierwszy kanał sygnału
+N = length(ecg_signal); % Liczba próbek
+Fs = 360; % Częstotliwość próbkowania (Hz) - dostosuj jeśli inna
+
+% Oś czasu
+dt = 1 / Fs;
+t = dt * (0:N-1); % Skala czasu w sekundach
+
+% Rysowanie sygnału EKG
+figure;
+plot(t, ecg_signal);
+xlabel('Czas [s]');
+ylabel('Amplituda');
+title('Sygnał EKG');
+grid on;
+
+% Okno (np. prostokątne, Hanninga, Czebyszewa)
+w1 = boxcar(N)'; % Okno prostokątne
+w2 = hanning(N)'; % Okno Hanninga
+w3 = chebwin(N, 140)'; % Okno Czebyszewa (parametr 140 dB tłumienia)
+
+w = w1; % Wybór okna
+figure;
+stem(w);
+title('Okno w(n)');
+grid on;
+
+% Zastosowanie okna do sygnału
+xw = ecg_signal .* w;
+figure;
+plot(t, xw);
+xlabel('Czas [s]');
+ylabel('Amplituda');
+title('Okienkowany sygnał EKG');
+grid on;
+
+% Dyskretna Transformata Fouriera (DFT)
+f0 = Fs / N; % Rozdzielczość częstotliwościowa
+f1 = f0 * (0:N-1); % Oś częstotliwości w Hz
+
+for k = 1:N
+    X1(k) = sum(xw .* exp(-j * 2 * pi / N * (k-1) * (0:N-1))) / N;
+end
+
+% Skala poprawiona dla okna
+X1 = N * X1 / sum(w);
+
+% Dyskretna transformata Fouriera o większej rozdzielczości (DtFT)
+df = 1; % Rozdzielczość częstotliwościowa (Hz)
+fmax = 0.5 * Fs; % Maksymalna częstotliwość
+f2 = -fmax : df : fmax; % Oś częstotliwości
+
+for k = 1:length(f2)
+    X2(k) = sum(xw .* exp(-j * 2 * pi * (f2(k) / Fs) * (0:N-1))) / N;
+end
+
+% Poprawienie skali dla okna
+X2 = N * X2 / sum(w);
+
+% Wykresy widma w skali liniowej i dB
+figure;
+plot(f1, abs(X1), 'ro', f2, abs(X2), 'b-');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+title('Widmo DFT (czerwone) i DtFT (niebieskie) - skala liniowa');
+grid on;
+
+figure;
+plot(f1, 20*log10(abs(X1)), 'ro', f2, 20*log10(abs(X2)), 'b-');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda [dB]');
+title('Widmo DFT (czerwone) i DtFT (niebieskie) - skala decybelowa');
+grid on;
+
+% Wyznaczenie częstotliwości pracy serca (peak w widmie)
+[~, max_idx] = max(abs(X1(1:N/2))); % Szukamy maksimum w pierwszej połowie
+HR_freq = f1(max_idx); % Główna częstotliwość
+HR_bpm = HR_freq * 60; % Przekształcenie na uderzenia na minutę
+
+fprintf('Częstotliwość pracy serca: %.2f BPM\n', HR_bpm);
