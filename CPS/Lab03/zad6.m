@@ -19,12 +19,24 @@ len = max(length(canary), length(motor));
 canary = [canary; zeros(len - length(canary), 1)];
 motor = [motor; zeros(len - length(motor), 1)];
 
+% Oś czasu
+time = (0:len-1) / Fs;
+
+% Wykresy oryginalnych sygnałów
+figure;
+subplot(2,1,1);
+plot(time, canary);
+title('Oryginalny sygnał - Śpiew ptaka'); xlabel('Czas (s)'); ylabel('Amplituda');
+subplot(2,1,2);
+plot(time, motor);
+title('Oryginalny sygnał - Warkot silnika'); xlabel('Czas (s)'); ylabel('Amplituda');
+
 % Obliczenie DFT
 CanaryDFT = fft(canary);
 MotorDFT = fft(motor);
 
 % Oś częstotliwości
-freqs = linspace(-Fs/2, Fs/2, len);
+freqs = (-len/2:len/2-1) * (Fs / len);
 
 % Wykresy widm
 figure;
@@ -45,22 +57,25 @@ plot(freqs, abs(fftshift(SumDFT)));
 title('Widmo DFT - Suma sygnałów'); xlabel('Częstotliwość (Hz)'); ylabel('Amplituda');
 
 % Filtracja - usunięcie niskich częstotliwości (warkot silnika)
-thresh = 500; % Próg częstotliwości do usunięcia
+thresh = 1000; % Próg częstotliwości do usunięcia
 
-SumDFT_filtered = SumDFT;
-idx = abs(freqs) < thresh;
-SumDFT_filtered(idx) = 0;
+SumDFT_shifted = fftshift(SumDFT);
+idx = (freqs > -thresh) & (freqs < thresh);
+SumDFT_shifted(idx) = 0;
+SumDFT_shifted(:,2)=0;
+SumDFT_filtered = ifftshift(SumDFT_shifted);
 
 % IDFT
-filtered_signal = ifft(SumDFT_filtered, 'symmetric');
+filtered_signal = real(ifft(SumDFT_filtered));
 
 % Odsłuch
 sound(filtered_signal, Fs);
 
 % Wykres przefiltrowanego sygnału
-figure;
-plot(filtered_signal);
-title('Przefiltrowany sygnał'); xlabel('Próbki'); ylabel('Amplituda');
+figure(4);
+plot(time, filtered_signal); 
+xlabel('Czas (s)'); ylabel('Amplituda');
+title('Przefiltrowany sygnał');
 
 % Zapis do pliku
 audiowrite('filtered_signal.wav', filtered_signal, Fs);
