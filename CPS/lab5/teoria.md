@@ -1,0 +1,1 @@
+tu można teorie wrzucać
