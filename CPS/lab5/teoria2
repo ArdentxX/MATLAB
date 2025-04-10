@@ -1,0 +1,112 @@
+zadanie 1:
+Definicja zer i biegunów:
+Zera i bieguny są zadane jako liczby zespolone. Następnie za pomocą funkcji poly() otrzymujemy 
+współczynniki wielomianów licznikowego i mianownikowego.
+
+Normalizacja transmitancji:
+Obliczamy wartość transmitancji przy ω = 10 rad/s. Stała K jest wybierana tak, 
+aby |H(j10)| = 1. Dzięki temu w paśmie przepustowym (przyjmując ω ≈ 10 rad/s) mamy jednostkowe wzmocnienie.
+
+Rysowanie planu zespolonego:
+Funkcja zplane() rysuje położenie zer i biegunów na płaszczyźnie zespolonej. 
+Dodatkowo ręcznie rysujemy zera jako czerwone kółka i bieguny jako czarne gwiazdki.
+
+Charakterystyki amplitudowe i fazowe:
+Generujemy wektor pulsacji w i obliczamy transmitancję H(jω).
+Wyznaczamy moduł (zarówno w skali liniowej, jak i w dB) oraz fazę.
+Wizualizujemy charakterystyki za pomocą wykresów.
+
+Przy uruchomieniu powyższego kodu w MATLABie zobaczysz odpowiednie wykresy zer i biegunów, charakterystyki amplitudowe 
+(linowe i decybelowe) oraz charakterystykę fazową, co pozwoli odpowiedzieć na wszystkie pytania zawarte w zadaniu.
+
+Czy filtr ten jest pasmowo-przepustowy?
+Tak, jest.
+– Filtr ma zera transmitancji w punktach ±j5 i ±j15 → oznacza to, że dla częstotliwości około 5 i 15 rad/s odpowiedź układu spada do zera.
+– Bieguny są skoncentrowane wokół ω ≈ 10 rad/s (w środku pasma), więc filtr przepuszcza sygnały właśnie w tym zakresie.
+– Na wykresie charakterystyki amplitudowej widać wyraźne pasmo przepustowe w okolicach ω = 10 rad/s i tłumienie poza nim.
+
+Jakie jest maksymalne i minimalne tłumienie w paśmie zaporowym?
+Z wykresu amplitudowego (w dB):
+– Maksymalne tłumienie występuje w miejscach zer transmitancji (ω = 5 i ω = 15 rad/s) — tam wartość |H(jω)| spada prawie do 0, a więc:
+  Tłumienie ≈ –∞ dB (czyli teoretycznie idealne wyzerowanie sygnału)
+– Minimalne tłumienie w paśmie zaporowym (czyli najbliżej pasma przepustowego) to ok. –20 do –40 dB, zależnie od dokładnej szerokości zapory.
+
+Wartości można dokładnie odczytać z wykresu 20·log10(|H(jω)|).
+
+Czy wzmocnienie układu w paśmie przepustowym jest równe 1?
+Tak.
+– Znormalizowaliśmy transmitancję przez współczynnik K, tak aby:
+      |H(j10)| = 1
+– Oznacza to, że wzmocnienie wynosi dokładnie 1 w środku pasma przepustowego.
+
+Narysuj charakterystykę fazowo-częstotliwościową. Czy jest ona zgodna z naszymi oczekiwaniami?
+Tak, w przybliżeniu.
+– Charakterystyka fazowa (wykres angle(H(jω))) powinna być w miarę liniowa w paśmie przepustowym (ω ≈ 8–12 rad/s).
+– Liniowość fazy oznacza, że filtr nie deformuje sygnału – nie przesuwa różnych składowych częstotliwościowych o różne czasy.
+
+Jeśli krzywa fazy ma zbliżoną do prostoliniowej postać w okolicach ω = 10 rad/s, to odpowiedź układu jest spójna z oczekiwaniami.
+
+-------------------------------------------------------------------------------------------------------------------------
+zadanie 2:
+Wraz ze wzrostem rzędu zbocze filtru staje się bardziej strome – filtr szybciej "odcina" sygnały niepożądane.
+Filtry wysokiego rzędu mają lepsze tłumienie w paśmie zaporowym, ale są bardziej złożone.
+
+Charakterystyki fazowe
+Pokazują, jak faza sygnału zmienia się z częstotliwością.
+Przy większym N, filtr bardziej zniekształca sygnały, jeśli zależy nam na nieliniowości fazy.
+
+Odpowiedź impulsowa pokazuje, jak filtr reaguje na bardzo krótki impuls:
+Przy Butterworthie – sygnał szybko zanika, bez oscylacji (cecha tej rodziny filtrów).
+
+Odpowiedź skokowa (na skok jednostkowy):
+Filtr ma powolne narastanie, bez przeregulowania.
+Im wyższy rząd (tu N=4), tym bardziej stonowana odpowiedź – brak oscylacji jak np. w Czebyszewie lub Eliptycznym.
+
+Wniosek:
+Butterworth N=4 daje stabilne i gładkie odpowiedzi czasowe – dobre do zastosowań, gdzie ważna 
+jest stabilność i brak zniekształceń impulsowych.
+---------------------------------------------------------------------------------------------------------------------------
+zadanie 3:
+Typ filtru	Zalety	Wady
+Butterworth:	Gładka charakterystyka, brak zafalowań, stabilna faza/	Wymaga najwyższego rzędu by osiągnąć wymagane tłumienie
+Czebyszew I:	Niższy rząd niż Butterworth, ostra charakterystyka/	Zafalowanie w paśmie przepustowym
+Czebyszew II:	Zafalowanie tylko w paśmie zaporowym, ostry zbiór/	Mniej popularny, bardziej złożona struktura
+Eliptyczny:	Najniższy możliwy rząd, ostry spadek w paśmie przejściowym/	Zafalowania w obu pasmach, najbardziej złożony
+
+Najkorzystniejszy filtr: eliptyczny
+Dlaczego?
+Spełnia wszystkie warunki (≤3 dB w paśmie, ≥40 dB w zaporowym),
+Wymaga najniższego rzędu, co: upraszcza implementację, zmniejsza koszty układowe, ogranicza potencjalne 
+zniekształcenia fazowe i szumy.
+
+------------------------------------------------------------------------------------------------------------------------------
+zadanie 4:
+1. Butterworth – LP → LP
+Prototyp: bardzo gładka charakterystyka, bez żadnych zafalowań.
+Po transformacji (skalowanie częstotliwości):
+-Zmiana punktu -3 dB na 𝑓0=100Hz
+-Zbocze przejściowe jest łagodne, nawet dla N = 8
+
+2. Czebyszew I – LP → HP
+Prototyp: zafalowania (oscylacje) w paśmie przepustowym, zaporowe wygładzone.
+Po transformacji (LP → HP):
+-Wzmocnienia w niskich częstotliwościach tłumione, przepuszczane wyższe.
+-Zafalowanie przenosi się do górnego pasma, czyli tam, gdzie teraz filtr przepuszcza.
+
+3. Czebyszew II – LP → BP
+Prototyp: zafalowania tylko w paśmie zaporowym, gładkie pasmo przepustowe.
+Po transformacji (LP → BP):
+-Dwa zbocza: dolne i górne, z wyraźnie tłumionym sygnałem poza zakresem 𝑓1=10Hz i 𝑓2=100Hz.
+-Zachowane: brak oscylacji w paśmie, ale obecne w zaporowym.
+
+4. Eliptyczny – LP → BS
+Prototyp: zafalowania w obu pasmach – przepustowym i zaporowym.
+Po transformacji (LP → BS):
+-Sygnał w zakresie f1-f 2 (czyli 10–100 Hz) jest tłumiony – filtr blokuje te częstotliwości.
+-Poza tym zakresem – obecne zafalowania.
+
+Każdy filtr ma swoje zastosowanie zależnie od wymagań:
+Butterworth: gdy zależy na gładkiej fazie i prostocie.
+Czebyszew I: gdy możemy zaakceptować zafalowania w przepustowym, ale chcemy stromości.
+Czebyszew II: dla gładkiej przepustowości i ostrego tłumienia.
+Eliptyczny: najlepszy kompromis między rzędem a selektywnością – kosztem zafalowań.
