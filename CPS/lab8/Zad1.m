@@ -7,7 +7,7 @@ clc;
 load('lab08_am.mat');
 % Załóżmy, że przedostatnia cyfra legitymacji to 3
 signal_idx = 3; % Zmień na swoją przedostatnią cyfrę legitymacji
-x = eval(['x', num2str(signal_idx)]);
+x = eval(['s', num2str(signal_idx)]);
 
 % Parametry sygnału
 fs = 1000; % Częstotliwość próbkowania [Hz]
