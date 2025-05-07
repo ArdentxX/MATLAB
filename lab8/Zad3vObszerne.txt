@@ -1,0 +1,629 @@
+%% Zadanie 3 - Filtry interpolatora i decymatora cyfrowego, mikser audio
+% Politechnika - Cyfrowe Przetwarzanie Sygnałów
+% 
+% Program demonstruje techniki zmiany częstotliwości próbkowania (resampling)
+% sygnałów cyfrowych oraz miksowania sygnałów o różnych częstotliwościach
+% próbkowania do wspólnego formatu wyjściowego.
+%
+% Główne etapy:
+% 1. Generacja trzech sygnałów sinusoidalnych o różnych częstotliwościach próbkowania
+% 2. Repróbkowanie tych sygnałów do wspólnej częstotliwości 48 kHz
+% 3. Miksowanie sygnałów poprzez dodawanie
+% 4. Analiza porównawcza różnych metod repróbkowania
+% 5. Obróbka rzeczywistych sygnałów audio
+
+% Czyszczenie środowiska
+clear all;
+close all;
+clc;
+
+%% Definicja parametrów sygnałów
+% Parametry trzech różnych sygnałów wejściowych:
+% - x1: sygnał o niskiej częstotliwości próbkowania (8 kHz) - typowej dla telefonii
+% - x2: sygnał o średniej częstotliwości próbkowania (32 kHz) - jakość radiowa
+% - x3: sygnał o wysokiej częstotliwości próbkowania (48 kHz) - jakość studyjna
+
+% Parametry sygnału wynikowego
+fs_target = 48000;  % Docelowa częstotliwość próbkowania [Hz] - standard studyjny
+t = 1;              % Czas trwania sygnału [s]
+
+% Parametry sygnałów składowych
+f1 = 1001.2;        % Częstotliwość sygnału x1 [Hz]
+fs1 = 8000;         % Częstotliwość próbkowania x1 [Hz]
+f2 = 303.1;         % Częstotliwość sygnału x2 [Hz]
+fs2 = 32000;        % Częstotliwość próbkowania x2 [Hz]
+f3 = 2110.4;        % Częstotliwość sygnału x3 [Hz]
+fs3 = 48000;        % Częstotliwość próbkowania x3 [Hz] (równa docelowej)
+
+fprintf('*** PARAMETRY SYGNAŁÓW ***\n');
+fprintf('Sygnał x1: f = %.1f Hz, fs = %d Hz\n', f1, fs1);
+fprintf('Sygnał x2: f = %.1f Hz, fs = %d Hz\n', f2, fs2);
+fprintf('Sygnał x3: f = %.1f Hz, fs = %d Hz\n', f3, fs3);
+fprintf('Docelowa częstotliwość próbkowania: %d Hz\n\n', fs_target);
+
+%% Generacja sygnałów sinusoidalnych
+% Tworzymy trzy sygnały sinusoidalne o zadanych parametrach
+% Zauważ, że każdy ma inną gęstość próbkowania, więc dla tego samego czasu t
+% będą mieć różną liczbę próbek
+
+% Wektory czasu dla poszczególnych sygnałów
+t1 = (0:1/fs1:t-1/fs1)';
+t2 = (0:1/fs2:t-1/fs2)';
+t3 = (0:1/fs3:t-1/fs3)';
+t_target = (0:1/fs_target:t-1/fs_target)';
+
+% Generacja sygnałów sinusoidalnych
+x1 = sin(2*pi*f1*t1);
+x2 = sin(2*pi*f2*t2);
+x3 = sin(2*pi*f3*t3);
+
+fprintf('Liczba próbek w poszczególnych sygnałach:\n');
+fprintf('x1: %d próbek\n', length(x1));
+fprintf('x2: %d próbek\n', length(x2));
+fprintf('x3: %d próbek\n', length(x3));
+fprintf('Docelowo: %d próbek\n\n', length(t_target));
+
+% Generacja oczekiwanego sygnału wynikowego (analitycznie)
+% To jest sygnał referencyjny, który powinniśmy otrzymać po idealnym repróbkowaniu
+x4_expected = sin(2*pi*f1*t_target) + sin(2*pi*f2*t_target) + sin(2*pi*f3*t_target);
+
+%% Repróbkowanie sygnału x1 z fs1=8000 Hz do fs_target=48000 Hz
+% Proces repróbkowania składa się z dwóch etapów:
+% 1. Nadpróbkowanie (upsampling) - wstawienie zer między próbki
+% 2. Filtracja interpolacyjna - wygładzenie sygnału
+
+% Współczynnik nadpróbkowania (upsampling) - całkowity (L/M gdzie L=6, M=1)
+up_factor1 = fs_target / fs1;  % = 6
+fprintf('Współczynnik nadpróbkowania dla x1: %d\n', up_factor1);
+
+% Nadpróbkowanie przez wstawienie zer (upsampling) - zwiększamy częstotliwość próbkowania
+x1_upsampled = zeros(length(x1) * up_factor1, 1);
+x1_upsampled(1:up_factor1:end) = x1;  % Umieszczamy oryginalne próbki co up_factor1 pozycji
+
+% Projektowanie filtru interpolującego dla x1
+% Filtr dolnoprzepustowy o częstotliwości odcięcia równej połowie częstotliwości
+% pierwotnego sygnału znormalizowanej względem nowej częstotliwości
+cutoff1 = (fs1/2) / fs_target;  % = 4000/48000 = 1/12
+filter_order1 = 48;  % Rząd filtru interpolującego (wyższy = lepsza jakość, większe opóźnienie)
+b_interp1 = fir1(filter_order1, cutoff1, 'low') * up_factor1;
+% Mnożymy przez up_factor1 aby zachować energię sygnału
+
+% Filtracja interpolująca - wygładzenie sygnału po nadpróbkowaniu
+x1_interpolated = filter(b_interp1, 1, x1_upsampled);
+
+% Kompensacja opóźnienia filtru - filtry FIR wprowadzają opóźnienie N/2
+delay1 = filter_order1 / 2;
+x1_interpolated = x1_interpolated(delay1+1:end);
+x1_interpolated = [x1_interpolated; zeros(delay1, 1)];
+
+fprintf('Repróbkowanie x1: %d Hz -> %d Hz zakończone\n', fs1, fs_target);
+
+%% Repróbkowanie sygnału x2 z fs2=32000 Hz do fs_target=48000 Hz
+% W tym przypadku współczynnik repróbkowania jest ułamkowy (L/M gdzie L=3, M=2)
+% Proces składa się z trzech etapów:
+% 1. Nadpróbkowanie (upsampling) o współczynnik L=3
+% 2. Filtracja interpolacyjna
+% 3. Decymacja (downsampling) o współczynnik M=2
+
+% Współczynnik nadpróbkowania (upsampling) - ułamkowy
+up_factor2 = fs_target / fs2;  % = 3/2 = 1.5
+fprintf('Współczynnik nadpróbkowania dla x2: %.2f (ułamkowy = %d/%d)\n', up_factor2, 3, 2);
+
+% Implementacja ułamkowego repróbkowania (upsampling o czynnik 3, potem decymacja o czynnik 2)
+% Najpierw nadpróbkowanie o czynnik 3 (zwiększa częstotliwość do 96 kHz)
+x2_upsampled_3 = zeros(length(x2) * 3, 1);
+x2_upsampled_3(1:3:end) = x2;  % Umieszczamy oryginalne próbki co 3 pozycje
+
+% Projektowanie filtru interpolującego dla x2
+cutoff2_up = (fs2/2) / (fs2*3);  % = 16000/96000 = 1/6
+filter_order2_up = 36;
+b_interp2_up = fir1(filter_order2_up, cutoff2_up, 'low') * 3;  
+% Mnożymy przez 3 aby zachować energię sygnału
+
+% Filtracja interpolująca
+x2_interpolated_3 = filter(b_interp2_up, 1, x2_upsampled_3);
+
+% Kompensacja opóźnienia filtru
+delay2_up = filter_order2_up / 2;
+x2_interpolated_3 = x2_interpolated_3(delay2_up+1:end);
+x2_interpolated_3 = [x2_interpolated_3; zeros(delay2_up, 1)];
+
+% Następnie decymacja o czynnik 2 (zmniejsza częstotliwość z 96 kHz do 48 kHz)
+% Przed decymacją potrzebujemy filtracji antyaliasingowej aby zapobiec aliasingowi
+cutoff2_down = (fs2*3/2) / (fs2*3);  % = 48000/96000 = 1/2
+filter_order2_down = 24;
+b_decim2 = fir1(filter_order2_down, cutoff2_down, 'low');
+
+% Filtracja antyaliasingowa przed decymacją
+x2_filtered = filter(b_decim2, 1, x2_interpolated_3);
+
+% Kompensacja opóźnienia filtru
+delay2_down = filter_order2_down / 2;
+x2_filtered = x2_filtered(delay2_down+1:end);
+x2_filtered = [x2_filtered; zeros(delay2_down, 1)];
+
+% Decymacja - wybieramy co drugą próbkę
+x2_interpolated = x2_filtered(1:2:end);
+
+fprintf('Repróbkowanie x2: %d Hz -> %d Hz zakończone\n', fs2, fs_target);
+
+%% Sygnał x3 już ma docelową częstotliwość próbkowania fs3=48000 Hz
+% Nie wymaga repróbkowania
+x3_interpolated = x3;
+fprintf('Sygnał x3 już ma docelową częstotliwość próbkowania %d Hz\n\n', fs_target);
+
+%% Łączenie sygnałów (przez dodawanie)
+% Przed dodaniem musimy upewnić się, że wszystkie sygnały mają taką samą długość
+
+% Dopasowanie długości sygnałów (wybieramy najkrótszy)
+min_length = min([length(x1_interpolated), length(x2_interpolated), length(x3_interpolated)]);
+fprintf('Dopasowanie długości sygnałów do %d próbek\n', min_length);
+
+x1_interpolated = x1_interpolated(1:min_length);
+x2_interpolated = x2_interpolated(1:min_length);
+x3_interpolated = x3_interpolated(1:min_length);
+
+% Dodawanie sygnałów - miksowanie
+x4 = x1_interpolated + x2_interpolated + x3_interpolated;
+fprintf('Miksowanie sygnałów zakończone\n\n');
+
+%% Analiza wyników
+% Porównujemy sygnał wynikowy z oczekiwanym sygnałem analitycznym
+
+% Przycinamy oczekiwany sygnał do tej samej długości
+x4_expected = x4_expected(1:min_length);
+
+% Obliczenie błędu średniokwadratowego (MSE) - mierzy jakość repróbkowania
+mse = mean((x4 - x4_expected).^2);
+fprintf('*** ANALIZA WYNIKÓW ***\n');
+fprintf('Błąd średniokwadratowy między rzeczywistym a oczekiwanym sygnałem: %e\n', mse);
+if mse < 1e-4
+    fprintf('Wynik bardzo dobry! Błąd jest pomijalnie mały.\n');
+elseif mse < 1e-3
+    fprintf('Wynik dobry. Niewielki błąd repróbkowania.\n');
+else
+    fprintf('Uwaga: Relatywnie duży błąd - konieczna optymalizacja filtrów.\n');
+end
+fprintf('\n');
+
+% Wizualizacja wyników - pokazujemy fragmenty sygnałów dla lepszej czytelności
+t_plot = t_target(1:min_length);
+samples_to_display = 500;  % Liczba próbek do wyświetlenia
+
+figure;
+subplot(5,1,1);
+plot(t_plot(1:samples_to_display), x1_interpolated(1:samples_to_display));
+title('Sygnał x1 po repróbkowaniu do 48 kHz');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(5,1,2);
+plot(t_plot(1:samples_to_display), x2_interpolated(1:samples_to_display));
+title('Sygnał x2 po repróbkowaniu do 48 kHz');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(5,1,3);
+plot(t_plot(1:samples_to_display), x3_interpolated(1:samples_to_display));
+title('Sygnał x3 (już w 48 kHz)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(5,1,4);
+plot(t_plot(1:samples_to_display), x4(1:samples_to_display));
+title('Sygnał wynikowy x4 = x1 + x2 + x3');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(5,1,5);
+plot(t_plot(1:samples_to_display), x4_expected(1:samples_to_display));
+title('Oczekiwany sygnał x4 (wygenerowany analitycznie)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+% Analiza widmowa sygnału wynikowego
+NFFT = 2^nextpow2(length(x4));  % Najbliższa potęga 2 - optymalizacja dla FFT
+X4 = fft(x4, NFFT) / length(x4);  % Obliczanie FFT i normalizacja
+f = fs_target/2 * linspace(0, 1, NFFT/2+1);  % Wektor częstotliwości
+
+figure('Name', 'Analiza widmowa', 'NumberTitle', 'off');
+plot(f, 2*abs(X4(1:NFFT/2+1)));
+title('Widmo sygnału wynikowego x4');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+grid on;
+xlim([0, 3000]);  % Ograniczenie zakresu częstotliwości dla lepszej widoczności
+
+% Oznaczanie częstotliwości składowych na wykresie
+hold on;
+plot([f1 f1], [0 max(2*abs(X4(1:NFFT/2+1)))], 'r--');
+plot([f2 f2], [0 max(2*abs(X4(1:NFFT/2+1)))], 'g--');
+plot([f3 f3], [0 max(2*abs(X4(1:NFFT/2+1)))], 'b--');
+text(f1, max(2*abs(X4(1:NFFT/2+1)))*0.8, [num2str(f1) ' Hz'], 'Color', 'r');
+text(f2, max(2*abs(X4(1:NFFT/2+1)))*0.9, [num2str(f2) ' Hz'], 'Color', 'g');
+text(f3, max(2*abs(X4(1:NFFT/2+1)))*0.7, [num2str(f3) ' Hz'], 'Color', 'b');
+hold off;
+
+%% Odsłuchanie sygnału
+% Normalizacja sygnału przed odtworzeniem aby uniknąć przesterowania
+fprintf('*** ODSŁUCH SYGNAŁU ***\n');
+fprintf('Odtwarzanie sygnału x4 (suma trzech sygnałów sinusoidalnych) przy częstotliwości %d Hz\n', fs_target);
+fprintf('Powinny być słyszalne tony o częstotliwościach: %.1f Hz, %.1f Hz i %.1f Hz\n', f1, f2, f3);
+fprintf('Naciśnij dowolny klawisz, aby rozpocząć odtwarzanie...\n');
+pause;
+
+x4_normalized = x4/max(abs(x4));  % Normalizacja amplitudy do zakresu [-1, 1]
+sound(x4_normalized, fs_target);  % Odtworzenie dźwięku
+fprintf('Odtwarzanie zakończone.\n\n');
+
+%% Miksowanie rzeczywistych sygnałów audio
+% Wczytanie plików audio
+fprintf('*** MIKSOWANIE RZECZYWISTYCH SYGNAŁÓW AUDIO ***\n');
+try
+    [x1_real, fs1_real] = audioread('x1.wav');
+    [x2_real, fs2_real] = audioread('x2.wav');
+    fprintf('Wczytano pliki audio:\n');
+    fprintf('x1.wav: %d próbek, %d Hz\n', length(x1_real), fs1_real);
+    fprintf('x2.wav: %d próbek, %d Hz\n', length(x2_real), fs2_real);
+catch
+    fprintf('UWAGA: Nie znaleziono plików audio. Pomijanie tej sekcji.\n\n');
+    x1_real = []; x2_real = [];
+    fs1_real = 0; fs2_real = 0;
+end
+
+if ~isempty(x1_real) && ~isempty(x2_real)
+    % Repróbkowanie do 48 kHz
+    fprintf('Repróbkowanie plików audio do %d Hz...\n', fs_target);
+
+    % Repróbkowanie x1_real
+    up_factor1_real = fs_target / fs1_real;
+
+    % Implementacja repróbkowania dla x1_real
+    if up_factor1_real == round(up_factor1_real)  % Jeśli współczynnik jest liczbą całkowitą
+        fprintf('Repróbkowanie x1.wav za pomocą metody FIR (całkowity współczynnik)\n');
+        x1_real_upsampled = zeros(length(x1_real) * up_factor1_real, 1);
+        x1_real_upsampled(1:up_factor1_real:end) = x1_real;
+        
+        cutoff1_real = (fs1_real/2) / fs_target;
+        filter_order1_real = 48;
+        b_interp1_real = fir1(filter_order1_real, cutoff1_real, 'low') * up_factor1_real;
+        
+        x1_real_interpolated = filter(b_interp1_real, 1, x1_real_upsampled);
+        
+        delay1_real = filter_order1_real / 2;
+        x1_real_interpolated = x1_real_interpolated(delay1_real+1:end);
+        x1_real_interpolated = [x1_real_interpolated; zeros(delay1_real, 1)];
+    else
+        % Dla ułamkowego współczynnika repróbkowania używamy resample
+        fprintf('Repróbkowanie x1.wav za pomocą funkcji resample (ułamkowy współczynnik)\n');
+        x1_real_interpolated = resample(x1_real, fs_target, fs1_real);
+    end
+
+    % Repróbkowanie x2_real
+    up_factor2_real = fs_target / fs2_real;
+
+    if up_factor2_real == round(up_factor2_real)  % Jeśli współczynnik jest liczbą całkowitą
+        fprintf('Repróbkowanie x2.wav za pomocą metody FIR (całkowity współczynnik)\n');
+        x2_real_upsampled = zeros(length(x2_real) * up_factor2_real, 1);
+        x2_real_upsampled(1:up_factor2_real:end) = x2_real;
+        
+        cutoff2_real = (fs2_real/2) / fs_target;
+        filter_order2_real = 48;
+        b_interp2_real = fir1(filter_order2_real, cutoff2_real, 'low') * up_factor2_real;
+        
+        x2_real_interpolated = filter(b_interp2_real, 1, x2_real_upsampled);
+        
+        delay2_real = filter_order2_real / 2;
+        x2_real_interpolated = x2_real_interpolated(delay2_real+1:end);
+        x2_real_interpolated = [x2_real_interpolated; zeros(delay2_real, 1)];
+    else
+        % Dla ułamkowego współczynnika repróbkowania używamy resample
+        fprintf('Repróbkowanie x2.wav za pomocą funkcji resample (ułamkowy współczynnik)\n');
+        x2_real_interpolated = resample(x2_real, fs_target, fs2_real);
+    end
+
+    % Upewnij się, że są wektorami kolumnowymi
+    x1_real_interpolated = x1_real_interpolated(:);
+    x2_real_interpolated = x2_real_interpolated(:);
+
+    % Miksowanie rzeczywistych sygnałów audio
+    min_length_real = min(length(x1_real_interpolated), length(x2_real_interpolated));
+    x1_real_interpolated = x1_real_interpolated(1:min_length_real);
+    x2_real_interpolated = x2_real_interpolated(1:min_length_real);
+
+    % Dodawanie - miksowanie
+    mixed_real = x1_real_interpolated + x2_real_interpolated;
+    fprintf('Miksowanie plików audio zakończone.\n');
+
+    % Normalizacja i zapis do pliku
+    mixed_real = mixed_real / max(abs(mixed_real));
+    audiowrite('mixed_real_48kHz.wav', mixed_real, fs_target);
+    fprintf('Zapisano plik wynikowy: mixed_real_48kHz.wav (%d Hz)\n', fs_target);
+    
+    % Wizualizacja sygnałów rzeczywistych
+    t_real = (0:length(mixed_real)-1)/fs_target;
+    samples_to_display_real = min(5*fs_target, length(mixed_real)); % 5 sekund lub mniej
+    
+    figure('Name', 'Sygnały rzeczywiste', 'NumberTitle', 'off');
+    subplot(3,1,1);
+    plot(t_real(1:samples_to_display_real), x1_real_interpolated(1:samples_to_display_real));
+    title('Sygnał x1.wav po repróbkowaniu do 48 kHz');
+    xlabel('Czas [s]');
+    ylabel('Amplituda');
+    grid on;
+    
+    subplot(3,1,2);
+    plot(t_real(1:samples_to_display_real), x2_real_interpolated(1:samples_to_display_real));
+    title('Sygnał x2.wav po repróbkowaniu do 48 kHz');
+    xlabel('Czas [s]');
+    ylabel('Amplituda');
+    grid on;
+    
+    subplot(3,1,3);
+    plot(t_real(1:samples_to_display_real), mixed_real(1:samples_to_display_real));
+    title('Zmiksowany sygnał (x1.wav + x2.wav)');
+    xlabel('Czas [s]');
+    ylabel('Amplituda');
+    grid on;
+    
+    % Odsłuch rzeczywistych sygnałów audio
+    fprintf('\nOdtwarzanie zmiksowanego pliku audio...\n');
+    fprintf('Naciśnij dowolny klawisz, aby rozpocząć odtwarzanie...\n');
+    pause;
+    sound(mixed_real, fs_target);
+    fprintf('Odtwarzanie zakończone.\n\n');
+end
+
+%% CZĘŚĆ OPCJONALNA: Miksowanie do częstotliwości CD-Audio (44.1 kHz)
+fprintf('*** OPCJONALNE: MIKSOWANIE DO CZĘSTOTLIWOŚCI CD-AUDIO ***\n');
+fs_cd = 44100;  % Częstotliwość CD-Audio
+fprintf('Repróbkowanie do standardu CD-Audio: %d Hz\n', fs_cd);
+
+if ~isempty(x1_real) && ~isempty(x2_real)
+    % Repróbkowanie zmiksowanych sygnałów do 44.1 kHz
+    mixed_real_cd = resample(mixed_real, fs_cd, fs_target);
+
+    % Normalizacja i zapis do pliku
+    mixed_real_cd = mixed_real_cd / max(abs(mixed_real_cd));
+    audiowrite('mixed_real_44.1kHz.wav', mixed_real_cd, fs_cd);
+    fprintf('Zapisano plik wynikowy w standardzie CD-Audio: mixed_real_44.1kHz.wav (%d Hz)\n', fs_cd);
+    
+    % Odsłuch
+    fprintf('Odtwarzanie zmiksowanego pliku w jakości CD-Audio...\n');
+    fprintf('Naciśnij dowolny klawisz, aby rozpocząć odtwarzanie...\n');
+    pause;
+    sound(mixed_real_cd, fs_cd);
+    fprintf('Odtwarzanie zakończone.\n\n');
+else
+    fprintf('Brak plików audio do konwersji do formatu CD-Audio.\n\n');
+end
+
+%% CZĘŚĆ OPCJONALNA: Miksowanie sygnałów syntetycznych różnymi metodami
+fprintf('*** OPCJONALNE: PORÓWNANIE METOD REPRÓBKOWANIA ***\n');
+fprintf('Implementacja trzech różnych metod repróbkowania:\n');
+fprintf('1. Filtr FIR (metoda podstawowa)\n');
+fprintf('2. Interpolacja liniowa\n');
+fprintf('3. Rekonstrukcja sinc (idealna teoretycznie)\n\n');
+
+% Metoda 1: Interpolacja liniowa - najprostsza metoda interpolacji
+fprintf('Metoda 1: Repróbkowanie przez interpolację liniową...\n');
+x1_linear = interp1(t1, x1, t_target, 'linear');
+x2_linear = interp1(t2, x2, t_target, 'linear');
+x3_linear = x3;  % już ma właściwą częstotliwość próbkowania
+
+% Dopasowanie długości
+min_length_linear = min([length(x1_linear), length(x2_linear), length(x3_linear)]);
+x1_linear = x1_linear(1:min_length_linear);
+x2_linear = x2_linear(1:min_length_linear);
+x3_linear = x3_linear(1:min_length_linear);
+
+% Miksowanie z wykorzystaniem interpolacji liniowej
+x4_linear = x1_linear + x2_linear + x3_linear;
+fprintf('Metoda 1: Interpolacja liniowa zakończona.\n');
+
+% Metoda 2: Rekonstrukcja sinc (metoda teoretycznie idealna)
+fprintf('Metoda 2: Repróbkowanie przez rekonstrukcję sinc...\n');
+
+% Rekonstrukcja sinc dla każdego sygnału
+x1_sinc = zeros(size(t_target));
+x2_sinc = zeros(size(t_target));
+
+% Implementacja rekonstrukcji sygnału metodą splotu z sin(x)/x dla x1
+for i = 1:length(t_target)
+    % Dla każdego punktu w nowej dziedzinie czasu
+    t = t_target(i);
+    sum1 = 0;
+    for k = 1:length(x1)
+        % Obliczenie wartości funkcji sinc
+        arg = pi * (t - t1(k)) * fs1;
+        if abs(arg) < 1e-10  % Zabezpieczenie przed dzieleniem przez 0
+            sinc_val = 1;
+        else
+            sinc_val = sin(arg) / arg;
+        end
+        sum1 = sum1 + x1(k) * sinc_val;
+    end
+    x1_sinc(i) = sum1;
+end
+
+% Implementacja rekonstrukcji sygnału metodą splotu z sin(x)/x dla x2
+for i = 1:length(t_target)
+    % Dla każdego punktu w nowej dziedzinie czasu
+    t = t_target(i);
+    sum2 = 0;
+    for k = 1:length(x2)
+        % Obliczenie wartości funkcji sinc
+        arg = pi * (t - t2(k)) * fs2;
+        if abs(arg) < 1e-10  % Zabezpieczenie przed dzieleniem przez 0
+            sinc_val = 1;
+        else
+            sinc_val = sin(arg) / arg;
+        end
+        sum2 = sum2 + x2(k) * sinc_val;
+    end
+    x2_sinc(i) = sum2;
+end
+
+% x3 już w docelowej częstotliwości próbkowania
+x3_sinc = x3;
+
+% Dopasowanie długości
+min_length_sinc = min([length(x1_sinc), length(x2_sinc), length(x3_sinc)]);
+x1_sinc = x1_sinc(1:min_length_sinc);
+x2_sinc = x2_sinc(1:min_length_sinc);
+x3_sinc = x3_sinc(1:min_length_sinc);
+
+% Miksowanie z rekonstrukcją sinc
+x4_sinc = x1_sinc + x2_sinc + x3_sinc;
+fprintf('Metoda 2: Rekonstrukcja sinc zakończona.\n');
+
+% Porównanie błędów dla różnych metod
+mse_fir = mean((x4 - x4_expected(1:min_length)).^2);
+mse_linear = mean((x4_linear - x4_expected(1:min_length_linear)).^2);
+mse_sinc = mean((x4_sinc - x4_expected(1:min_length_sinc)).^2);
+
+fprintf('\n*** PORÓWNANIE METOD REPRÓBKOWANIA ***\n');
+fprintf('Błąd MSE dla metody FIR: %e\n', mse_fir);
+fprintf('Błąd MSE dla interpolacji liniowej: %e\n', mse_linear);
+fprintf('Błąd MSE dla rekonstrukcji sinc: %e\n', mse_sinc);
+
+% Interpretacja wyników
+fprintf('\nInterpretacja wyników:\n');
+if mse_sinc < mse_linear && mse_sinc < mse_fir
+    fprintf('Rekonstrukcja sinc daje najlepsze wyniki (teoretycznie idealna).\n');
+elseif mse_fir < mse_linear
+    fprintf('Metoda FIR daje lepsze wyniki niż interpolacja liniowa.\n');
+else
+    fprintf('Interpolacja liniowa daje zaskakująco dobre wyniki w tym przypadku.\n');
+end
+
+% Wizualizacja porównawcza metod na wspólnym wykresie
+figure('Name', 'Porównanie metod repróbkowania', 'NumberTitle', 'off');
+samples = min([200, min_length, min_length_linear, min_length_sinc]);
+t_samples = t_target(1:samples);
+
+subplot(3,1,1);
+plot(t_samples, x4(1:samples), 'b-', t_samples, x4_expected(1:samples), 'r--');
+title('Metoda FIR vs. Oczekiwany sygnał');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+legend('FIR', 'Oczekiwany');
+grid on;
+
+subplot(3,1,2);
+plot(t_samples, x4_linear(1:samples), 'g-', t_samples, x4_expected(1:samples), 'r--');
+title('Interpolacja liniowa vs. Oczekiwany sygnał');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+legend('Liniowa', 'Oczekiwany');
+grid on;
+
+subplot(3,1,3);
+plot(t_samples, x4_sinc(1:samples), 'm-', t_samples, x4_expected(1:samples), 'r--');
+title('Rekonstrukcja sinc vs. Oczekiwany sygnał');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+legend('Sinc', 'Oczekiwany');
+grid on;
+
+%% CZĘŚĆ OPCJONALNA: Implementacja metody wielofazowej 
+fprintf('\n*** OPCJONALNE: METODY REPRÓBKOWANIA W PROFESJONALNYCH MIKSERACH ***\n');
+fprintf('Analiza zaawansowanych metod repróbkowania stosowanych w rzeczywistych mikserach audio:\n\n');
+
+fprintf('1. Metoda Secret Rabbit Code (libsamplerate) - wysokiej jakości metoda używana w wielu mikserach\n');
+fprintf('   - Wykorzystuje algorytmy sinc wielomianowej interpolacji z ważeniem oknem\n');
+fprintf('   - Oferuje różne tryby kompromisu między jakością a złożonością obliczeniową\n\n');
+
+fprintf('2. Metoda PulseAudio (Linux) - adaptacyjna metoda repróbkowania:\n');
+fprintf('   - Wykorzystuje algorytm filtru FIR z adaptacyjną długością\n');
+fprintf('   - Automatycznie dostosowuje złożoność filtru do wymaganej jakości\n\n');
+
+fprintf('3. Implementacja przykładowej zaawansowanej metody - repróbkowanie wielofazowe:\n');
+
+% Implementacja prostej wersji repróbkowania wielofazowego
+fprintf('Implementacja metody repróbkowania wielofazowego dla sygnału x1...\n');
+
+% Parametry dla x1
+gcd_val = gcd(fs1, fs_target);
+L = fs_target / gcd_val;  % Współczynnik upsampling = 6
+M = fs1 / gcd_val;        % Współczynnik downsampling = 1
+
+% Projektowanie filtru prototypowego
+filter_order_poly = 48;
+cutoff_poly = min(0.5/L, 0.5/M);
+h_proto = fir1(filter_order_poly, cutoff_poly, 'low') * L;
+
+% Tworzenie banku filtrów wielofazowych
+h_poly = reshape([h_proto, zeros(1, ceil(length(h_proto)/L)*L - length(h_proto))], L, [])';
+
+% Upsampling sygnału x1
+x1_up = zeros(length(x1)*L, 1);
+x1_up(1:L:end) = x1;
+
+% Przygotowanie bufora dla wyniku
+x1_polyphase = zeros(length(x1_up), 1);
+
+% Filtracja wielofazowa
+for phase = 0:L-1
+    phase_filter = h_poly(:, phase+1);
+    phase_input = x1_up(1+phase:L:end);
+    
+    % Dopełnienie zerami aby długości były zgodne
+    if length(phase_input) < length(x1_up)/L
+        phase_input = [phase_input; zeros(ceil(length(x1_up)/L) - length(phase_input), 1)];
+    end
+    
+    % Filtracja
+    phase_output = filter(phase_filter, 1, phase_input);
+    
+    % Uzupełnienie wyniku
+    x1_polyphase(1+phase:L:end) = phase_output(1:length(x1_polyphase(1+phase:L:end)));
+end
+
+% Dostosowanie długości i normalizacja
+x1_polyphase = x1_polyphase(1:min_length);
+x1_polyphase = x1_polyphase / max(abs(x1_polyphase)) * max(abs(x1));
+
+% Porównanie metody wielofazowej z oczekiwanym wynikiem
+x1_expected = sin(2*pi*f1*t_target(1:min_length));
+mse_poly = mean((x1_polyphase - x1_expected).^2);
+
+fprintf('Błąd MSE dla metody wielofazowej dla x1: %e\n', mse_poly);
+if mse_poly < mse_sinc
+    fprintf('Metoda wielofazowa daje bardzo dobre wyniki, lepsze niż rekonstrukcja sinc!\n');
+else
+    fprintf('Metoda wielofazowa działa dobrze, ale rekonstrukcja sinc pozostaje lepsza w dokładności.\n');
+end
+
+% Porównanie wizualne metody wielofazowej
+figure('Name', 'Porównanie metody wielofazowej', 'NumberTitle', 'off');
+samples_poly = min(200, length(x1_polyphase));
+plot(t_target(1:samples_poly), x1_polyphase(1:samples_poly), 'b-', ...
+     t_target(1:samples_poly), x1_expected(1:samples_poly), 'r--');
+title('Repróbkowanie wielofazowe vs. Oczekiwany sygnał');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+legend('Wielofazowe', 'Oczekiwany');
+grid on;
+
+% Podsumowanie efektywności obliczeniowej
+fprintf('\nPodsumowanie efektywności obliczeniowej metod repróbkowania:\n');
+fprintf('1. Interpolacja liniowa: Najszybsza, ale najniższa jakość\n');
+fprintf('2. Filtr FIR: Dobra jakość, umiarkowana złożoność\n');
+fprintf('3. Rekonstrukcja sinc: Najlepsza jakość, ale wysokie koszty obliczeniowe\n');
+fprintf('4. Metoda wielofazowa: Bardzo dobra jakość przy niższej złożoności niż pełna rekonstrukcja sinc\n\n');
+
+fprintf('*** ZAKOŃCZENIE LABORATORIUM ***\n');
+fprintf('Dzięki przeprowadzonym eksperymentom poznaliśmy różne metody repróbkowania sygnałów\n');
+fprintf('oraz techniki miksowania sygnałów o różnych częstotliwościach próbkowania.\n');
+fprintf('Metody te są kluczowym elementem współczesnych systemów cyfrowego przetwarzania audio.\n\n');
+
+% Zapisanie wszystkich wyników do pliku
+save('lab_resampling_results.mat', 'x4', 'x4_linear', 'x4_sinc', 'x1_polyphase', ...
+    'mse_fir', 'mse_linear', 'mse_sinc', 'mse_poly');
+fprintf('Wyniki zapisano do pliku lab_resampling_results.mat\n');

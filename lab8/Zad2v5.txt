@@ -1,0 +1,332 @@
+%% === ZADANIE 2: Modulacja i demodulacja AM (DSB-C, DSB-SC, SSB-SC) ===
+% 
+% Program prezentuje trzy rodzaje modulacji amplitudowej:
+% - DSB-C  (Double Side Band with Carrier)
+% - DSB-SC (Double Side Band with Suppressed Carrier)
+% - SSB-SC (Single Side Band with Suppressed Carrier)
+%
+% Dodatkowo realizuje demodulację sygnałów oraz bonus - dwie stacje na jednej nośnej.
+clear; clc; close all;
+
+%% === [1] Wczytanie i przygotowanie sygnałów audio ===
+fprintf('Wczytywanie i przygotowanie sygnałów audio...\n');
+[x1, fsx] = audioread('mowa8000.wav');
+x2 = flipud(x1);  % Odwrócony sygnał mowy (od tyłu)
+
+% Parametry sygnału radiowego
+fs = 400000;  % Częstotliwość próbkowania sygnału radiowego [Hz]
+fc1 = 100000; % Nośna 1 [Hz]
+fc2 = 110000; % Nośna 2 [Hz]
+dA = 0.25;    % Głębokość modulacji
+
+% Nadpróbkowanie sygnałów audio do częstotliwości sygnału radiowego
+x1_up = resample(x1, fs, fsx);
+x2_up = resample(x2, fs, fsx);
+t = (0:length(x1_up)-1)' / fs;  % Wektor czasu
+
+%% === [2] Filtr Hilberta FIR ===
+fprintf('Projektowanie filtru Hilberta...\n');
+% Projektowanie filtru Hilberta jako FIR
+N = 101;  % Rząd filtru (powinien być nieparzysty)
+n = -(N-1)/2:(N-1)/2;  % Wektor indeksów dla odpowiedzi impulsowej
+h = zeros(size(n));
+% Obliczenie odpowiedzi impulsowej filtru Hilberta
+h(n ~= 0) = (2 ./ (pi * n(n ~= 0))) .* sin(pi * n(n ~= 0) / 2);
+% Zastosowanie okna Hamminga dla poprawy charakterystyki filtru
+h = h .* hamming(N)';
+
+% Zastosowanie filtru Hilberta do sygnałów - przesunięcie fazowe o -90°
+fprintf('Filtrowanie sygnałów filtrem Hilberta...\n');
+x1h = filter(h, 1, x1_up);
+x2h = filter(h, 1, x2_up);
+
+% Kompensacja opóźnienia wprowadzonego przez filtr FIR
+delay = floor(N/2);
+x1h = [x1h(delay+1:end); zeros(delay, 1)];
+x2h = [x2h(delay+1:end); zeros(delay, 1)];
+
+%% === [3] Modulacje ===
+fprintf('Generowanie sygnałów modulowanych...\n');
+
+% --- DSB-C (Double Side Band with Carrier) ---
+fprintf('  Generowanie DSB-C...\n');
+x1_dsb_c = (1 + dA * x1_up) .* cos(2*pi*fc1*t);
+x2_dsb_c = (1 + dA * x2_up) .* cos(2*pi*fc2*t);
+yDSB_C = x1_dsb_c + x2_dsb_c;  % Sygnał zawierający dwie stacje radiowe
+
+% --- DSB-SC (Double Side Band with Suppressed Carrier) ---
+fprintf('  Generowanie DSB-SC...\n');
+x1_dsb_sc = dA * x1_up .* cos(2*pi*fc1*t);
+x2_dsb_sc = dA * x2_up .* cos(2*pi*fc2*t);
+yDSB_SC = x1_dsb_sc + x2_dsb_sc;  % Sygnał zawierający dwie stacje radiowe
+
+% --- SSB-SC (Single Side Band with Suppressed Carrier) ---
+fprintf('  Generowanie SSB-SC...\n');
+% Pierwsza stacja - górna wstęga boczna (USB - Upper Side Band)
+x1_ssb = 0.5 * x1_up .* cos(2*pi*fc1*t) + 0.5 * x1h .* sin(2*pi*fc1*t);
+% Druga stacja - dolna wstęga boczna (LSB - Lower Side Band)
+x2_ssb = 0.5 * x2_up .* cos(2*pi*fc2*t) - 0.5 * x2h .* sin(2*pi*fc2*t);
+ySSB_SC = x1_ssb + x2_ssb;  % Sygnał zawierający dwie stacje radiowe
+
+%% === [4] Filtr dolnoprzepustowy do demodulacji ===
+fprintf('Projektowanie filtru dolnoprzepustowego do demodulacji...\n');
+lpFilt = designfilt('lowpassfir', ...
+    'PassbandFrequency', 4000, ...  % Częstotliwość przepustowa [Hz]
+    'StopbandFrequency', 6000, ...  % Częstotliwość zaporowa [Hz]
+    'SampleRate', fs, ...           % Częstotliwość próbkowania [Hz]
+    'DesignMethod', 'equiripple');  % Metoda projektowania
+
+% Wizualizacja charakterystyki filtru dolnoprzepustowego
+figure;
+freqz(lpFilt);
+title('Charakterystyka częstotliwościowa filtru dolnoprzepustowego');
+
+%% === [5] DEMODULACJA (dla każdej nośnej) ===
+fprintf('Demodulacja sygnałów...\n');
+
+%% ----- DSB-C (Double Side Band with Carrier) -----
+fprintf('  Demodulacja DSB-C...\n');
+
+% --- Demodulacja stacji 1 (fc1 = 100 kHz) ---
+% Krok 1: Przemnożenie odebranego sygnału przez falę nośną (przesunięcie widma w dół)
+signal_mixed1 = yDSB_C .* cos(2*pi*fc1*t);
+
+% Krok 2a: Filtracja dolnoprzepustowa - odcięcie niepotrzebnych częstotliwości
+signal_filtered1 = filter(lpFilt, signal_mixed1);  % POPRAWKA - usunięto '1'
+
+% Krok 2b: Równolegle wykonujemy transformatę Hilberta filtrowanego sygnału
+% (przesunięcie fazy o -90°)
+signal_hilbert1 = filter(h, 1, signal_filtered1);
+signal_hilbert1 = [signal_hilbert1(delay+1:end); zeros(delay, 1)];  % Kompensacja opóźnienia
+
+% Krok 3: Obliczenie obwiedni sygnału (pierwiastek z sumy kwadratów)
+dec1_dsb_c = sqrt(signal_filtered1.^2 + signal_hilbert1.^2);
+
+% Krok 4: Usunięcie składowej stałej (z modulacji DSB-C) i skalowanie
+dec1_dsb_c = (dec1_dsb_c - 1) / dA;
+
+% Krok 5: Normalizacja amplitudy
+dec1_dsb_c = dec1_dsb_c / max(abs(dec1_dsb_c));
+
+% Krok 6: Decymacja - zmiana częstotliwości próbkowania z fs na fsx
+dec1_dsb_c_down = resample(dec1_dsb_c, fsx, fs);
+
+% --- Demodulacja stacji 2 (fc2 = 110 kHz) ---
+% To samo co wyżej, ale dla częstotliwości fc2
+signal_mixed2 = yDSB_C .* cos(2*pi*fc2*t);
+signal_filtered2 = filter(lpFilt, signal_mixed2);  % POPRAWKA - usunięto '1'
+signal_hilbert2 = filter(h, 1, signal_filtered2);
+signal_hilbert2 = [signal_hilbert2(delay+1:end); zeros(delay, 1)];
+dec2_dsb_c = sqrt(signal_filtered2.^2 + signal_hilbert2.^2);
+dec2_dsb_c = (dec2_dsb_c - 1) / dA;
+dec2_dsb_c = dec2_dsb_c / max(abs(dec2_dsb_c));
+dec2_dsb_c_down = resample(dec2_dsb_c, fsx, fs);
+
+%% ----- DSB-SC (Double Side Band with Suppressed Carrier) -----
+fprintf('  Demodulacja DSB-SC...\n');
+
+% --- Demodulacja stacji 1 (fc1 = 100 kHz) ---
+% Podobnie jak dla DSB-C, ale bez odejmowania składowej stałej
+signal_mixed1 = yDSB_SC .* cos(2*pi*fc1*t);
+signal_filtered1 = filter(lpFilt, signal_mixed1);  % POPRAWKA - usunięto '1'
+signal_hilbert1 = filter(h, 1, signal_filtered1);
+signal_hilbert1 = [signal_hilbert1(delay+1:end); zeros(delay, 1)];
+dec1_dsb_sc = sqrt(signal_filtered1.^2 + signal_hilbert1.^2);
+dec1_dsb_sc = dec1_dsb_sc / dA;  % Skalowanie
+dec1_dsb_sc = dec1_dsb_sc / max(abs(dec1_dsb_sc));  % Normalizacja
+dec1_dsb_sc_down = resample(dec1_dsb_sc, fsx, fs);  % Decymacja
+
+% --- Demodulacja stacji 2 (fc2 = 110 kHz) ---
+signal_mixed2 = yDSB_SC .* cos(2*pi*fc2*t);
+signal_filtered2 = filter(lpFilt, signal_mixed2);  % POPRAWKA - usunięto '1'
+signal_hilbert2 = filter(h, 1, signal_filtered2);
+signal_hilbert2 = [signal_hilbert2(delay+1:end); zeros(delay, 1)];
+dec2_dsb_sc = sqrt(signal_filtered2.^2 + signal_hilbert2.^2);
+dec2_dsb_sc = dec2_dsb_sc / dA;
+dec2_dsb_sc = dec2_dsb_sc / max(abs(dec2_dsb_sc));
+dec2_dsb_sc_down = resample(dec2_dsb_sc, fsx, fs);
+
+%% ----- SSB-SC (Single Side Band with Suppressed Carrier) -----
+fprintf('  Demodulacja SSB-SC...\n');
+
+% --- Demodulacja stacji 1 (fc1 = 100 kHz) - górna wstęga boczna (USB) ---
+% Krok 1: Przemnożenie odebranego sygnału przez falę nośną
+demod1 = filter(lpFilt, ySSB_SC .* cos(2*pi*fc1*t));  % POPRAWKA - usunięto '1'
+
+% Krok 2: Obliczenie transformaty Hilberta
+demod1h = filter(h, 1, demod1);
+demod1h = [demod1h(delay+1:end); zeros(delay, 1)];  % Kompensacja opóźnienia
+
+% Krok 3: Odzyskanie sygnału z górnej wstęgi bocznej (odejmowanie)
+dec1_ssb = demod1 - demod1h;  % Dla górnej wstęgi bocznej (USB)
+
+% Krok 4: Normalizacja i decymacja
+dec1_ssb = dec1_ssb / max(abs(dec1_ssb));
+dec1_ssb_down = resample(dec1_ssb, fsx, fs);
+
+% --- Demodulacja stacji 2 (fc2 = 110 kHz) - dolna wstęga boczna (LSB) ---
+demod2 = filter(lpFilt, ySSB_SC .* cos(2*pi*fc2*t));  % POPRAWKA - usunięto '1'
+demod2h = filter(h, 1, demod2);
+demod2h = [demod2h(delay+1:end); zeros(delay, 1)];
+
+% Dla dolnej wstęgi bocznej dodajemy (a nie odejmujemy) transformatę Hilberta
+dec2_ssb = demod2 + demod2h;  % Dla dolnej wstęgi bocznej (LSB)
+
+dec2_ssb = dec2_ssb / max(abs(dec2_ssb));
+dec2_ssb_down = resample(dec2_ssb, fsx, fs);
+
+%% === [6] ODSŁUCH i ZAPIS ===
+gain = 0.9;  % Wzmocnienie sygnału audio dla odsłuchu
+
+% Odsłuch zdemodulowanych sygnałów
+fprintf('\n=== ODSŁUCH SYGNAŁÓW ===\n');
+
+fprintf('Odtwarzanie sygnału z modulacji DSB-C, stacja 1...\n');
+sound(dec1_dsb_c_down * gain, fsx); 
+pause(length(dec1_dsb_c_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z modulacji DSB-C, stacja 2 (odwrócona mowa)...\n');
+sound(flipud(dec2_dsb_c_down) * gain, fsx); 
+pause(length(dec2_dsb_c_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z modulacji DSB-SC, stacja 1...\n');
+sound(dec1_dsb_sc_down * gain, fsx); 
+pause(length(dec1_dsb_sc_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z modulacji DSB-SC, stacja 2 (odwrócona mowa)...\n');
+sound(flipud(dec2_dsb_sc_down) * gain, fsx); 
+pause(length(dec2_dsb_sc_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z modulacji SSB-SC, stacja 1 (górna wstęga)...\n');
+sound(dec1_ssb_down * gain, fsx); 
+pause(length(dec1_ssb_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z modulacji SSB-SC, stacja 2 (dolna wstęga, odwrócona mowa)...\n');
+sound(flipud(dec2_ssb_down) * gain, fsx); 
+pause(length(dec2_ssb_down)/fsx + 0.5);
+
+%% === [7] BONUS: dwie stacje na jednej nośnej ===
+fprintf('\n=== BONUS: DWIE STACJE NA JEDNEJ NOŚNEJ ===\n');
+fprintf('Generowanie i demodulacja SSB-SC z dwiema stacjami na jednej nośnej...\n');
+
+% Generacja sygnału z dwiema stacjami na jednej nośnej
+ySSB_sameCarrier = ...
+    0.5 * x1_up .* cos(2*pi*fc1*t) + 0.5 * x1h .* sin(2*pi*fc1*t) + ... % Górna wstęga (USB)
+    0.5 * x2_up .* cos(2*pi*fc1*t) - 0.5 * x2h .* sin(2*pi*fc1*t);      % Dolna wstęga (LSB)
+
+% Wizualizacja widma sygnału z dwiema stacjami na jednej nośnej
+figure;
+L = 2^nextpow2(length(ySSB_sameCarrier));
+Y = fftshift(fft(ySSB_sameCarrier, L));
+f = fs*(-L/2:L/2-1)/L;
+plot(f, abs(Y)/L);
+xlim([-150000, 150000]);
+title('Widmo sygnału SSB-SC z dwiema stacjami na jednej nośnej');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+grid on;
+
+% Demodulacja
+demod_same = filter(lpFilt, ySSB_sameCarrier .* cos(2*pi*fc1*t));  % POPRAWKA - usunięto '1'
+demod_same_h = filter(h, 1, demod_same);
+demod_same_h = [demod_same_h(delay+1:end); zeros(delay, 1)];  % Kompensacja opóźnienia
+
+% Rozdzielenie wstęg bocznych
+dec_usb = demod_same - demod_same_h;  % Górna wstęga boczna (USB)
+dec_lsb = demod_same + demod_same_h;  % Dolna wstęga boczna (LSB)
+
+% Normalizacja amplitudy
+dec_usb = dec_usb / max(abs(dec_usb));
+dec_lsb = dec_lsb / max(abs(dec_lsb));
+
+% Decymacja do oryginalnej częstotliwości próbkowania
+dec_usb_down = resample(dec_usb, fsx, fs);
+dec_lsb_down = resample(dec_lsb, fsx, fs);
+
+% Odsłuch
+fprintf('Odtwarzanie sygnału z górnej wstęgi (USB) z jednej nośnej...\n');
+sound(dec_usb_down * gain, fsx); 
+pause(length(dec_usb_down)/fsx + 0.5);
+
+fprintf('Odtwarzanie sygnału z dolnej wstęgi (LSB) z jednej nośnej (odwrócona mowa)...\n');
+sound(flipud(dec_lsb_down) * gain, fsx); 
+pause(length(dec_lsb_down)/fsx + 0.5);
+
+fprintf('\nZakończono prezentację modulacji i demodulacji AM.\n');
+
+%% === [8] Dodatkowe wizualizacje ===
+% Wizualizacja sygnałów w dziedzinie czasu
+figure;
+t_plot = t(1:1000);  % Tylko fragment dla lepszej widoczności
+
+subplot(3,1,1);
+plot(t_plot, yDSB_C(1:1000));
+title('Sygnał DSB-C (fragment)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(3,1,2);
+plot(t_plot, yDSB_SC(1:1000));
+title('Sygnał DSB-SC (fragment)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(3,1,3);
+plot(t_plot, ySSB_SC(1:1000));
+title('Sygnał SSB-SC (fragment)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+% Wizualizacja widm sygnałów
+figure;
+L = 2^nextpow2(length(yDSB_C));
+f = fs*(-L/2:L/2-1)/L;
+
+subplot(3,1,1);
+Y_DSB_C = fftshift(fft(yDSB_C, L));
+plot(f, abs(Y_DSB_C)/L);
+xlim([-150000, 150000]);
+title('Widmo sygnału DSB-C');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+grid on;
+
+subplot(3,1,2);
+Y_DSB_SC = fftshift(fft(yDSB_SC, L));
+plot(f, abs(Y_DSB_SC)/L);
+xlim([-150000, 150000]);
+title('Widmo sygnału DSB-SC');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+grid on;
+
+subplot(3,1,3);
+Y_SSB_SC = fftshift(fft(ySSB_SC, L));
+plot(f, abs(Y_SSB_SC)/L);
+xlim([-150000, 150000]);
+title('Widmo sygnału SSB-SC');
+xlabel('Częstotliwość [Hz]');
+ylabel('Amplituda');
+grid on;
+
+% Wizualizacja oryginalnego i zdemodulowanego sygnału audio
+figure;
+t_audio = (0:length(x1)-1)' / fsx;
+t_demod = (0:length(dec1_dsb_c_down)-1)' / fsx;
+
+subplot(2,1,1);
+plot(t_audio, x1);
+title('Oryginalny sygnał audio');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
+
+subplot(2,1,2);
+plot(t_demod, dec1_dsb_c_down);
+title('Zdemodulowany sygnał audio (DSB-C)');
+xlabel('Czas [s]');
+ylabel('Amplituda');
+grid on;
